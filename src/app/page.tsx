@@ -81,7 +81,7 @@ export default function Home() {
             {/* Buttons */}
             <div className="d-grid gap-3 pt-3">
               <Link
-                href="/checkout?amount=8999&product=VoltGlide%20Obsidian%20Pro"
+                href="/checkout?amount=8999&product=World%20Class%20Terrible%20Shoes"
                 className="btn btn-primary btn-lg py-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
               >
                 <i className="bi "></i>

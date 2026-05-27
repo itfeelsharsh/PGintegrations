@@ -39,8 +39,8 @@ function CheckoutContent() {
 
   const [formData, setFormData] = useState({
     name: "Narinder Gandhi",
-    email: "narinder.gandhi@gmail.com",
-    phone: "9876543210",
+    email: "narinder.gandhi@gmail.gov",
+    phone: "4876543210",
     address: "Prahlad Nagar, Satellite",
     city: "Amdavad",
     state: "Gujarat",

@@ -63,7 +63,7 @@ async function verifyOrder(orderId: string, baseUrl: string, clientId: string, c
     // PineLabs response format: response.data.status or response.status
     const orderStatus = orderData.data?.status || orderData.status;
 
-    // Successful payment states for PineLabs Plural
+    // Successful payment states for PineLabs
     const isSuccess = ["PROCESSED", "AUTHORIZED", "CHARGED", "SUCCESS"].includes(orderStatus?.toUpperCase());
 
     return {

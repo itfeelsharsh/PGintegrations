@@ -501,17 +501,17 @@ function CheckoutContent() {
     },
     {
       id: "paytm",
-      name: "Paytm PG",
+      name: "PayTM PG",
 
     },
     {
       id: "payu",
-      name: "PayU India",
+      name: "PayU",
 
     },
     {
       id: "pinelabs",
-      name: "PineLabs Plural",
+      name: "PineLabs",
     },
     {
       id: "cashfree",
@@ -530,7 +530,7 @@ function CheckoutContent() {
       <div className="container text-center py-5">
         <div className="card shadow-sm border-success mx-auto p-4" style={{ maxWidth: "500px" }}>
           <div className="card-body">
-            <i className="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+            <i className="bi  fs-1 mb-3"></i>
             <h3 className="fw-bold mb-2">Payment Successful</h3>
             <p className="text-muted mb-4">
               Your transaction has been processed and verified.
@@ -817,10 +817,12 @@ function CheckoutContent() {
                     <>
                       <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                       <span>Processing...</span>
+                      
                     </>
                   ) : (
+                    
                     <>
-                      <i className="bi bi-lock-fill"></i>
+                      <i className="bi"></i>
                       <span>Pay with {gateways.find(g => g.id === selectedGateway)?.name}</span>
                     </>
                   )}

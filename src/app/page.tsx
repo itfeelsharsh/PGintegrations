@@ -54,27 +54,15 @@ export default function Home() {
         <div className="col-md-6">
           <div className="d-flex flex-column h-100 justify-content-between">
             <div>
-              <span className="badge bg-danger mb-2">New Release</span>
-              <h1 className="fw-bold display-5 mb-2">VoltGlide Obsidian Pro</h1>
+              <h1 className="fw-bold display-5 mb-2">World Class Terrible Shoes</h1>
               <p className="text-muted mb-3">Premium High-Performance Running Sneakers</p>
 
-              {/* Rating */}
-              <div className="d-flex align-items-center mb-3">
-                <div className="text-warning me-2">
-                  <i className="bi bi-star-fill"></i>
-                  <i className="bi bi-star-fill"></i>
-                  <i className="bi bi-star-fill"></i>
-                  <i className="bi bi-star-fill"></i>
-                  <i className="bi bi-star-half"></i>
-                </div>
-                <span className="text-secondary small">(4.8 / 5.0 based on 124 reviews)</span>
-              </div>
+              
 
               {/* Price */}
               <div className="d-flex align-items-center mb-4">
                 <h2 className="fw-bold text-primary mb-0 me-3">₹8,999.00</h2>
-                <span className="text-decoration-line-through text-muted fs-5">₹12,499.00</span>
-                <span className="badge bg-success ms-2">28% OFF</span>
+
               </div>
 
               <hr className="my-4" />
@@ -96,8 +84,8 @@ export default function Home() {
                 href="/checkout?amount=8999&product=VoltGlide%20Obsidian%20Pro"
                 className="btn btn-primary btn-lg py-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
               >
-                <i className="bi bi-cart-check-fill fs-5"></i>
-                <strong className="fs-5">Checkout</strong>
+                <i className="bi "></i>
+                <strong className="fs-5">Purchas</strong>
               </Link>
           
             </div>
@@ -107,16 +95,16 @@ export default function Home() {
 
       {/* Gateway list anchor */}
       <section id="gateways" className="py-4 border-top">
-        <h3 className="fw-bold mb-4">Supported Demo Integrations</h3>
+        <h3 className="fw-bold mb-4">Integrated Payment Gateways</h3>
         <p className="text-secondary">
-          This site is set up as a playground to demonstrate integration with multiple Indian Payment Gateways. Select one at checkout to view the flow.
+          This site is set up as a playground to demonstrate integration with multiple Indian Payment Gateways. Select one at checkout to view the flow.<br/><br/><br/> PLEASE GET TEST CARD/UPI DETAILS FOR THE GATEWAY YOU WANT TO TEST BY CLICKING THE BUTTON BELOW.
         </p>
         <div className="row g-3">
           {[
             { id: "razorpay", name: "Razorpay", testUrl: "https://www.google.com/search?q=razorpay+test+card+details" },
-            { id: "paytm", name: "Paytm PG", testUrl: "https://www.google.com/search?q=paytm+test+card+details" },
-            { id: "payu", name: "PayU India", testUrl: "https://www.google.com/search?q=payu+india+test+card+details" },
-            { id: "pinelabs", name: "PineLabs Plural", testUrl: "https://www.google.com/search?q=pinelabs+plural+test+card+details" },
+            { id: "paytm", name: "PayTM PG", testUrl: "https://www.google.com/search?q=paytm+test+card+details" },
+            { id: "payu", name: "PayU", testUrl: "https://www.google.com/search?q=payu+india+test+card+details" },
+            { id: "pinelabs", name: "PineLabs", testUrl: "https://www.google.com/search?q=pinelabs+plural+test+card+details" },
             { id: "cashfree", name: "Cashfree", testUrl: "https://www.google.com/search?q=cashfree+test+card+details" },
             { id: "phonepe", name: "PhonePe PG", testUrl: "https://www.google.com/search?q=phonepe+test+upi+ids" }
           ].map((gateway) => {
@@ -130,11 +118,11 @@ export default function Home() {
                     <div>
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <div className="d-flex align-items-center">
-                          <i className={`bi ${isEnabled ? "bi-check-circle-fill text-success" : "bi-dash-circle text-secondary"} me-2 fs-5`}></i>
+                          <i className={`bi ${isEnabled ? "" : "bi-dash-circle text-secondary"} me-2 fs-5`}></i>
                           <h5 className="card-title mb-0 fw-bold">{gateway.name}</h5>
                         </div>
                         <span className={`badge ${isEnabled ? "bg-success" : "bg-light text-muted border"} small`}>
-                          {isEnabled ? "Available" : "Under Implementation"}
+                          {isEnabled ? "" : "Under Implementation"}
                         </span>
                       </div>
                     </div>

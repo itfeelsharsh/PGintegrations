@@ -92,14 +92,14 @@ This step involves one API integration (Initiate Transaction API) from merchant�
 
  
 
-It is a backend, server-to-server (S2S) integration step where the merchant’s server sends a request to the Paytm PG server via the Initiate Transaction API. 
+It is a backend, server-to-server (S2S) integration step where the merchant’s server sends a request to the PayTM PG server via the Initiate Transaction API. 
 
  
 
  POST   Initiate Transaction API
 This is the first API that the merchant needs to call to initiate the transaction. Initiate Transaction API must be initiated from the merchant’s server at any point of time before invoking the JS code. Mostly, merchants call this API when a customer reaches the cart / order page.
 
-This API is required to initiate the transaction at merchant’s end. In response, Paytm PG returns the token in a key called txnToken. This token is later used to invoke the JS code that renders the checkout page. 
+This API is required to initiate the transaction at merchant’s end. In response, PayTM PG returns the token in a key called txnToken. This token is later used to invoke the JS code that renders the checkout page. 
 
  CAUTION
  
@@ -1182,12 +1182,12 @@ Terms of ServicePrivacy Policy
 This step involves one validation (Receive & Validate Callback Response) and one API integration (Transaction Status API).
 
 
-To update the transaction status, Paytm PG uses Callback URL as a default option to send the response of the transaction. However, it is highly recommended to integrate Transaction Status API or Webhook and fetch the final payment status before confirming your customer’s order.
+To update the transaction status, PayTM PG uses Callback URL as a default option to send the response of the transaction. However, it is highly recommended to integrate Transaction Status API or Webhook and fetch the final payment status before confirming your customer’s order.
 
  
 
 Receive & Validate Callback Response
-When the payment is successful, you receive the transaction status from Paytm PG on the Callback URL.
+When the payment is successful, you receive the transaction status from PayTM PG on the Callback URL.
 
  TIP
  
@@ -1207,7 +1207,7 @@ Failure to validate the checksum may result in fraudulent transactions.
  POST   Transaction Status API
 This API is used to verify transaction status before confirming customer’s order.
 
-Paytm PG strongly recommends the merchants to integrate this Transaction Status API that can be used to fetch the final transaction status corresponding to requested OrderId. Following are the transaction statuses:
+PayTM PG strongly recommends the merchants to integrate this Transaction Status API that can be used to fetch the final transaction status corresponding to requested OrderId. Following are the transaction statuses:
 
 Success
 Failed
@@ -1390,11 +1390,11 @@ Instead of using the Transaction Status API, alternatively you can configure Web
  NOTE
  
 
-Webhooks are the user specified HTTP callbacks that get triggered by some event and are used to connect two applications. It is a way Paytm PG server to send notification on the final status of transaction, refund, etc. to a publicly accessible web URL of the merchant. Unlike the Transaction Status API where you need to poll the data frequently to get the real time status, Webhook sends you the transaction status in real time and automated manner.
+Webhooks are the user specified HTTP callbacks that get triggered by some event and are used to connect two applications. It is a way PayTM PG server to send notification on the final status of transaction, refund, etc. to a publicly accessible web URL of the merchant. Unlike the Transaction Status API where you need to poll the data frequently to get the real time status, Webhook sends you the transaction status in real time and automated manner.
 
  
 
-To consume a webhook, you must configure a publicly accessible web URL from your Paytm dashboard. This URL should be capable of handling the updated event/response sent by Paytm PG.
+To consume a webhook, you must configure a publicly accessible web URL from your Paytm dashboard. This URL should be capable of handling the updated event/response sent by PayTM PG.
 
  
 

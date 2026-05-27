@@ -21,8 +21,7 @@ export default function RootLayout({
           <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
             <div className="container">
               <a className="navbar-brand d-flex align-items-center" href="/">
-                <i className="bi bi-wallet2 me-2 text-warning fs-4"></i>
-                <strong className="tracking-wide">Payment Gateway Integrations Playground</strong>
+                <strong className="tracking-wide">Payment Gateways&apos; Integration Playground</strong>
               </a>
               <button
                 className="navbar-toggler"
@@ -39,12 +38,12 @@ export default function RootLayout({
                 <ul className="navbar-nav ms-auto">
                   <li className="nav-item">
                     <a className="nav-link active" href="/">
-                      <i className="bi bi-house-door me-1"></i> Home
+                      <i className="bi "></i> Home
                     </a>
                   </li>
                   <li className="nav-item">
                     <a className="nav-link" href="#gateways">
-                      <i className="bi bi-credit-card me-1"></i> Gateways
+                      <i className="bi "></i> Gateways
                     </a>
                   </li>
                   <li className="nav-item">
@@ -54,7 +53,7 @@ export default function RootLayout({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <i className="bi bi-github me-1"></i> GitHub
+                      <i className="bi"></i> GitHub
                     </a>
                   </li>
                 </ul>
@@ -69,7 +68,7 @@ export default function RootLayout({
         </main>
 
         {/* Footer */}
-        <footer className="bg-dark text-white py-4 mt-auto">
+        <footer className=" text-white py-4 mt-auto">
           <div className="container">
      
  

@@ -1,16 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { GATEWAYS_CONFIG } from "@/app/gateways-config";
 
 export default function Home() {
   return (
     <div className="container">
       {/* Breadcrumb */}
       <nav aria-label="breadcrumb" className="mb-4">
-        <ol className="breadcrumb">
-          <li className="breadcrumb-item"><Link href="/">Shop</Link></li>
-          <li className="breadcrumb-item"><Link href="/">Footwear</Link></li>
-          <li className="breadcrumb-item active" aria-current="page">VoltGlide Obsidian Pro</li>
-        </ol>
+   
       </nav>
 
       {/* Product Detail Section */}
@@ -84,40 +81,13 @@ export default function Home() {
 
               {/* Description */}
               <p className="lead fs-6 text-secondary mb-4">
-                Engineered with revolutionary Zoom-MX responsive cushioning, the VoltGlide Obsidian Pro delivers maximum energy return and comfort. The dynamic Flyknit breathable upper wraps your foot for a secure, adaptive fit. Ideal for long-distance runs, workouts, or sleek athleisure styling.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
               </p>
 
-              {/* Color Selection */}
-              <div className="mb-3">
-                <label className="form-label fw-bold text-dark small uppercase">Select Color</label>
-                <div className="d-flex gap-2">
-                  <button className="btn btn-outline-dark p-2 rounded-circle d-flex align-items-center justify-content-center active" style={{ width: "32px", height: "32px" }}>
-                    <span className="rounded-circle" style={{ backgroundColor: "#d4fc34", width: "18px", height: "18px" }}></span>
-                  </button>
-                  <button className="btn btn-outline-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
-                    <span className="rounded-circle bg-dark" style={{ width: "18px", height: "18px" }}></span>
-                  </button>
-                  <button className="btn btn-outline-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
-                    <span className="rounded-circle bg-primary" style={{ width: "18px", height: "18px" }}></span>
-                  </button>
-                </div>
-              </div>
+            
 
               {/* Size Selection */}
-              <div className="mb-4">
-                <label className="form-label fw-bold text-dark small uppercase">Select Size (UK)</label>
-                <div className="d-flex gap-2 flex-wrap">
-                  {["7", "8", "9", "10", "11"].map((size) => (
-                    <button
-                      key={size}
-                      className={`btn btn-sm ${size === "9" ? "btn-dark" : "btn-outline-secondary"}`}
-                      style={{ width: "50px" }}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+    
             </div>
 
             {/* Buttons */}
@@ -127,11 +97,9 @@ export default function Home() {
                 className="btn btn-primary btn-lg py-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
               >
                 <i className="bi bi-cart-check-fill fs-5"></i>
-                <strong className="fs-5">Buy Now &amp; Checkout</strong>
+                <strong className="fs-5">Checkout</strong>
               </Link>
-              <button className="btn btn-outline-dark py-2">
-                <i className="bi bi-heart me-2"></i> Add to Wishlist
-              </button>
+          
             </div>
           </div>
         </div>
@@ -145,25 +113,49 @@ export default function Home() {
         </p>
         <div className="row g-3">
           {[
-            { name: "Razorpay", desc: "Cards, Netbanking, UPI, Wallets" },
-            { name: "Paytm PG", desc: "All-in-One SDK, Paytm Wallet, Postpaid" },
-            { name: "PayU", desc: "Enterprise Grade Routing, Instant Settlement" },
-            { name: "PineLabs", desc: "Plural gateway, Brand EMI, PayLater" },
-            { name: "Cashfree", desc: "Auto-collect, Payouts, Cardless EMI" },
-            { name: "PhonePe PG", desc: "UPI deep linking, Cards, Safe & Fast" }
-          ].map((gateway) => (
-            <div key={gateway.name} className="col-md-4">
-              <div className="card h-100 bg-white border shadow-sm">
-                <div className="card-body">
-                  <div className="d-flex align-items-center mb-2">
-                    <i className="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                    <h5 className="card-title mb-0 fw-bold">{gateway.name}</h5>
+            { id: "razorpay", name: "Razorpay", desc: "Cards, Netbanking, UPI, Wallets", testUrl: "https://www.google.com/search?q=razorpay+test+card+details&oq=razorpay+test+card+details" },
+            { id: "paytm", name: "Paytm PG", desc: "All-in-One SDK, Paytm Wallet, Postpaid" },
+            { id: "payu", name: "PayU India", desc: "Enterprise Grade Routing, Instant Settlement" },
+            { id: "pinelabs", name: "PineLabs Plural", desc: "Plural gateway, Brand EMI, PayLater" },
+            { id: "cashfree", name: "Cashfree", desc: "Auto-collect, Payouts, Cardless EMI" },
+            { id: "phonepe", name: "PhonePe PG", desc: "UPI deep linking, Cards, Safe & Fast" }
+          ].map((gateway) => {
+            const config = GATEWAYS_CONFIG[gateway.id as keyof typeof GATEWAYS_CONFIG];
+            const isEnabled = config?.enabled ?? false;
+
+            return (
+              <div key={gateway.name} className="col-md-4">
+                <div className={`card h-100 bg-white border shadow-sm ${!isEnabled ? "opacity-75" : ""}`}>
+                  <div className="card-body d-flex flex-column justify-content-between">
+                    <div>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <div className="d-flex align-items-center">
+                          <i className={`bi ${isEnabled ? "bi-check-circle-fill text-success" : "bi-dash-circle text-secondary"} me-2 fs-5`}></i>
+                          <h5 className="card-title mb-0 fw-bold">{gateway.name}</h5>
+                        </div>
+                        <span className={`badge ${isEnabled ? "bg-success" : "bg-light text-muted border"} small`}>
+                          {isEnabled ? "Available" : "Not Available"}
+                        </span>
+                      </div>
+                      <p className="card-text text-muted small">{gateway.desc}</p>
+                    </div>
+                    {gateway.testUrl && (
+                      <div className="mt-3">
+                        <a
+                          href={gateway.testUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-dark w-100 py-1"
+                        >
+                          Official Test Details <i className="bi bi-box-arrow-up-right ms-1"></i>
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  <p className="card-text text-muted small">{gateway.desc}</p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

@@ -22,8 +22,7 @@ export default function RootLayout({
             <div className="container">
               <a className="navbar-brand d-flex align-items-center" href="/">
                 <i className="bi bi-wallet2 me-2 text-warning fs-4"></i>
-                <strong className="tracking-wide">PG Integrations</strong>
-                <span className="badge bg-warning text-dark ms-2 fs-6">Demo</span>
+                <strong className="tracking-wide">Payment Gateway Integrations</strong>
               </a>
               <button
                 className="navbar-toggler"
@@ -72,26 +71,8 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="bg-dark text-white py-4 mt-auto">
           <div className="container">
-            <div className="row align-items-center">
-              <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                <h5 className="mb-1 text-warning">PG Integrations Demo</h5>
-                <p className="text-secondary small mb-0">
-                  Demo repository for Indian Payment Gateway integrations.
-                </p>
-              </div>
-              <div className="col-md-6 text-center text-md-end">
-                <div className="small text-secondary mb-2">Supported Gateways:</div>
-                <div className="d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
-                  <span className="badge bg-secondary">Razorpay</span>
-                  <span className="badge bg-secondary">Paytm PG</span>
-                  <span className="badge bg-secondary">PayU</span>
-                  <span className="badge bg-secondary">PineLabs</span>
-                  <span className="badge bg-secondary">Cashfree</span>
-                  <span className="badge bg-secondary">PhonePe PG</span>
-                </div>
-              </div>
-            </div>
-            <hr className="border-secondary my-3" />
+     
+ 
             <div className="text-center text-secondary small">
               Made with <i className="bi bi-heart-fill text-danger"></i> by{" "}
               <a

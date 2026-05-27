@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import Link from "next/link";
+import Script from "next/script";
+import { GATEWAYS_CONFIG } from "@/app/gateways-config";
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -11,6 +13,10 @@ function CheckoutContent() {
 
   const [selectedGateway, setSelectedGateway] = useState("razorpay");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed" | "keys_missing">("idle");
+  const [paymentId, setPaymentId] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [formData, setFormData] = useState({
     name: "John Doe",
     email: "john.doe@example.com",
@@ -26,17 +32,121 @@ function CheckoutContent() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePay = (e: React.FormEvent) => {
+  const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
 
-    // Simulate redirection/integration trigger
+    const config = GATEWAYS_CONFIG[selectedGateway as keyof typeof GATEWAYS_CONFIG];
+    if (!config?.enabled) {
+      alert("This payment gateway is currently disabled.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    if (selectedGateway === "razorpay") {
+      try {
+        const orderRes = await fetch("/api/razorpay/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, currency: "INR" }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        if (typeof window === "undefined" || !(window as any).Razorpay) {
+          setPaymentStatus("failed");
+          setErrorMessage("Razorpay SDK failed to load.");
+          setIsProcessing(false);
+          return;
+        }
+
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "Payment Gateway Integration",
+          description: productName,
+          order_id: orderData.id,
+          prefill: {
+            name: formData.name,
+            email: formData.email,
+            contact: formData.phone,
+          },
+          handler: async function (response: any) {
+            setIsProcessing(true);
+            try {
+              const verifyRes = await fetch("/api/razorpay/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (verifyRes.ok && verifyData.verified) {
+                setPaymentId(response.razorpay_payment_id);
+                setPaymentStatus("success");
+              } else {
+                setPaymentStatus("failed");
+                setErrorMessage(verifyData.error || "Verification failed.");
+              }
+            } catch (err: any) {
+              setPaymentStatus("failed");
+              setErrorMessage(err.message || "Verification request failed.");
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false);
+            },
+          },
+          theme: {
+            color: "#212529",
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
+    } else {
+      setTimeout(() => {
+        setIsProcessing(false);
+        alert(
+          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay is live.`
+        );
+      }, 1000);
+    }
+  };
+
+  const handleSimulateMockSuccess = () => {
+    setIsProcessing(true);
     setTimeout(() => {
+      setPaymentId(`pay_mock_${Math.random().toString(36).substring(2, 10)}`);
+      setPaymentStatus("success");
       setIsProcessing(false);
-      alert(
-        `[Demo] Initiating payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} for customer ${formData.name} (${formData.phone}).\n\n(Actual payment gateway integrations will be set up in the next steps!)`
-      );
-    }, 1500);
+    }, 500);
   };
 
   const gateways = [
@@ -44,58 +154,151 @@ function CheckoutContent() {
       id: "razorpay",
       name: "Razorpay",
       icon: "bi-shield-check text-primary",
-      badge: "Popular",
-      desc: "Fast checkout via Cards, Netbanking, UPI & Wallets.",
+      badge: "Integrated",
+      desc: "Live payment checkout modal via SDK.",
     },
     {
       id: "paytm",
       name: "Paytm PG",
-      icon: "bi-wallet2 text-info",
-      badge: "UPI Focus",
-      desc: "Instant UPI, Paytm Wallet, Postpaid, and Netbanking.",
+      icon: "bi-wallet2 text-secondary",
+      badge: "Mock",
+      desc: "UPI and Paytm Wallet flow simulation.",
     },
     {
       id: "payu",
       name: "PayU India",
-      icon: "bi-credit-card text-success",
-      badge: "Enterprise",
-      desc: "Highly reliable card routing and multi-tier EMI checkout.",
+      icon: "bi-credit-card text-secondary",
+      badge: "Mock",
+      desc: "Card and Netbanking flow simulation.",
     },
     {
       id: "pinelabs",
       name: "PineLabs Plural",
-      icon: "bi-building-fill text-warning",
-      badge: "Brand EMIs",
-      desc: "Best for Brand EMIs, Debit/Credit Card PayLater options.",
+      icon: "bi-building-fill text-secondary",
+      badge: "Mock",
+      desc: "Brand EMIs and PayLater simulation.",
     },
     {
       id: "cashfree",
-      name: "Cashfree Payment",
-      icon: "bi-activity text-danger",
-      badge: "Instant Payouts",
-      desc: "Supports 120+ payment modes including cardless EMIs.",
+      name: "Cashfree",
+      icon: "bi-activity text-secondary",
+      badge: "Mock",
+      desc: "UPI and Card payment flow simulation.",
     },
     {
       id: "phonepe",
       name: "PhonePe PG",
-      icon: "bi-phone-fill text-purple",
-      badge: "Direct UPI",
-      desc: "Seamless UPI Intent, QR, and saved credit cards.",
+      icon: "bi-phone text-secondary",
+      badge: "Mock",
+      desc: "Direct UPI intent flow simulation.",
     },
   ];
 
+  if (paymentStatus === "success") {
+    return (
+      <div className="container text-center py-5">
+        <div className="card shadow-sm border-success mx-auto p-4" style={{ maxWidth: "500px" }}>
+          <div className="card-body">
+            <i className="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+            <h3 className="fw-bold mb-2">Payment Successful</h3>
+            <p className="text-muted mb-4">
+              Your transaction has been processed and verified.
+            </p>
+
+            <div className="bg-light p-3 rounded border text-start mb-4 small">
+              <div className="row g-2">
+                <div className="col-5 text-secondary">Payment ID:</div>
+                <div className="col-7 fw-semibold text-break">{paymentId}</div>
+                <div className="col-5 text-secondary">Amount Paid:</div>
+                <div className="col-7 fw-semibold">₹{Number(amount).toLocaleString("en-IN")}.00</div>
+                <div className="col-5 text-secondary">Gateway:</div>
+                <div className="col-7 fw-semibold">{selectedGateway.toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div className="d-grid">
+              <Link href="/" className="btn btn-dark py-2">
+                Continue Shopping
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === "keys_missing") {
+    return (
+      <div className="container text-center py-5">
+        <div className="card shadow-sm border-warning mx-auto p-4" style={{ maxWidth: "500px" }}>
+          <div className="card-body">
+            <i className="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3"></i>
+            <h4 className="fw-bold mb-3">Environment Keys Missing</h4>
+            <p className="text-secondary small mb-4">
+              Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.
+            </p>
+
+            <div className="bg-light p-3 rounded text-start mb-4 font-monospace small border">
+              <div>NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxx</div>
+              <div>RAZORPAY_KEY_SECRET=xxxxxx</div>
+            </div>
+
+            <div className="d-grid gap-2">
+              <button
+                onClick={handleSimulateMockSuccess}
+                disabled={isProcessing}
+                className="btn btn-dark py-2"
+              >
+                {isProcessing ? "Processing..." : "Simulate Successful Payment"}
+              </button>
+              <button
+                onClick={() => setPaymentStatus("idle")}
+                className="btn btn-outline-secondary py-2"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === "failed") {
+    return (
+      <div className="container text-center py-5">
+        <div className="card shadow-sm border-danger mx-auto p-4" style={{ maxWidth: "500px" }}>
+          <div className="card-body">
+            <i className="bi bi-x-circle-fill text-danger fs-1 mb-3"></i>
+            <h3 className="fw-bold mb-2">Payment Failed</h3>
+            <p className="text-danger small mb-4">{errorMessage || "The payment transaction could not be completed."}</p>
+
+            <div className="d-grid gap-2">
+              <button onClick={() => setPaymentStatus("idle")} className="btn btn-dark py-2">
+                Try Again
+              </button>
+              <Link href="/" className="btn btn-outline-secondary py-2">
+                Cancel
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
-      <h2 className="fw-bold mb-4">Secure Checkout</h2>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
+      <h2 className="fw-bold mb-4">Checkout</h2>
 
       <form onSubmit={handlePay}>
         <div className="row g-4">
-          {/* Form Details Column */}
           <div className="col-lg-8">
-            {/* Billing Details */}
             <div className="card shadow-sm border mb-4 bg-white">
               <div className="card-header bg-white py-3">
-                <h5 className="mb-0 fw-bold">1. Delivery &amp; Contact Details</h5>
+                <h5 className="mb-0 fw-bold">1. Delivery Info</h5>
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -111,14 +314,13 @@ function CheckoutContent() {
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label small fw-semibold text-secondary">Mobile Number (for UPI/SMS)</label>
+                    <label className="form-label small fw-semibold text-secondary">Phone Number</label>
                     <div className="input-group">
                       <span className="input-group-text bg-light">+91</span>
                       <input
                         type="tel"
                         name="phone"
                         className="form-control"
-                        placeholder="10-digit number"
                         pattern="[0-9]{10}"
                         value={formData.phone}
                         onChange={handleInputChange}
@@ -127,7 +329,7 @@ function CheckoutContent() {
                     </div>
                   </div>
                   <div className="col-12">
-                    <label className="form-label small fw-semibold text-secondary">Email Address</label>
+                    <label className="form-label small fw-semibold text-secondary">Email</label>
                     <input
                       type="email"
                       name="email"
@@ -138,7 +340,7 @@ function CheckoutContent() {
                     />
                   </div>
                   <div className="col-12">
-                    <label className="form-label small fw-semibold text-secondary">Delivery Address</label>
+                    <label className="form-label small fw-semibold text-secondary">Address</label>
                     <input
                       type="text"
                       name="address"
@@ -171,7 +373,7 @@ function CheckoutContent() {
                     />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label small fw-semibold text-secondary">PIN Code</label>
+                    <label className="form-label small fw-semibold text-secondary">PIN</label>
                     <input
                       type="text"
                       name="zip"
@@ -186,48 +388,51 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Gateway Selection */}
             <div className="card shadow-sm border bg-white mb-4">
               <div className="card-header bg-white py-3">
-                <h5 className="mb-0 fw-bold">2. Select Payment Gateway</h5>
+                <h5 className="mb-0 fw-bold">2. Payment Method</h5>
               </div>
               <div className="card-body">
-                <p className="text-secondary small mb-3">
-                  Choose a service provider to simulate checkout integration.
-                </p>
                 <div className="row g-3">
-                  {gateways.map((gw) => (
-                    <div key={gw.id} className="col-md-6">
-                      <label className="w-100 h-100 m-0">
-                        <input
-                          type="radio"
-                          name="gateway"
-                          value={gw.id}
-                          className="gateway-radio d-none"
-                          checked={selectedGateway === gw.id}
-                          onChange={() => setSelectedGateway(gw.id)}
-                        />
-                        <div className="gateway-card border rounded p-3 h-100 d-flex flex-column justify-content-between gateway-card-inner bg-white">
-                          <div>
-                            <div className="d-flex align-items-center justify-content-between mb-2">
-                              <div className="d-flex align-items-center">
-                                <i className={`bi ${gw.icon} fs-4 me-2`}></i>
-                                <h6 className="mb-0 fw-bold">{gw.name}</h6>
+                  {gateways.map((gw) => {
+                    const config = GATEWAYS_CONFIG[gw.id as keyof typeof GATEWAYS_CONFIG];
+                    const isEnabled = config?.enabled ?? false;
+
+                    return (
+                      <div key={gw.id} className="col-md-6">
+                        <label className={`w-100 h-100 m-0 ${!isEnabled ? "opacity-50" : ""}`}>
+                          <input
+                            type="radio"
+                            name="gateway"
+                            value={gw.id}
+                            className="gateway-radio d-none"
+                            checked={selectedGateway === gw.id}
+                            disabled={!isEnabled}
+                            onChange={() => isEnabled && setSelectedGateway(gw.id)}
+                          />
+                          <div className={`gateway-card border rounded p-3 h-100 d-flex flex-column justify-content-between gateway-card-inner bg-white ${!isEnabled ? "bg-light text-muted border-dashed" : ""}`} style={{ cursor: isEnabled ? "pointer" : "not-allowed" }}>
+                            <div>
+                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                <div className="d-flex align-items-center">
+                                  <i className={`bi ${gw.icon} fs-5 me-2 ${!isEnabled ? "text-secondary" : ""}`}></i>
+                                  <h6 className="mb-0 fw-bold text-dark">{gw.name}</h6>
+                                </div>
+                                <span className={`badge ${!isEnabled ? "bg-light text-muted border" : gw.id === 'razorpay' ? 'bg-primary' : 'bg-light text-dark'} border small`}>
+                                  {isEnabled ? gw.badge : "Not Available"}
+                                </span>
                               </div>
-                              <span className="badge bg-light text-dark border small">{gw.badge}</span>
+                              <p className="text-muted small mb-0">{gw.desc}</p>
                             </div>
-                            <p className="text-muted small mb-0">{gw.desc}</p>
                           </div>
-                        </div>
-                      </label>
-                    </div>
-                  ))}
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar Column */}
           <div className="col-lg-4">
             <div className="card shadow-sm border bg-white position-sticky" style={{ top: "20px" }}>
               <div className="card-header bg-white py-3">
@@ -251,19 +456,19 @@ function CheckoutContent() {
                   <span className="text-success">FREE</span>
                 </div>
                 <div className="d-flex justify-content-between small mb-3 text-secondary">
-                  <span>Taxes (GST 18% Incl.)</span>
+                  <span>GST (18% Incl.)</span>
                   <span>₹{Math.round(Number(amount) * 0.18).toLocaleString("en-IN")}.00</span>
                 </div>
                 <hr />
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <span className="fw-bold">Total Amount</span>
+                  <span className="fw-bold">Total</span>
                   <span className="fs-4 fw-bold text-primary">₹{Number(amount).toLocaleString("en-IN")}.00</span>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="btn btn-primary btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2 shadow"
+                  className="btn btn-dark btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2"
                 >
                   {isProcessing ? (
                     <>
@@ -272,15 +477,15 @@ function CheckoutContent() {
                     </>
                   ) : (
                     <>
-                      <i className="bi bi-shield-lock-fill fs-5"></i>
+                      <i className="bi bi-lock-fill"></i>
                       <span>Pay with {gateways.find(g => g.id === selectedGateway)?.name}</span>
                     </>
                   )}
                 </button>
 
                 <div className="text-center mt-3">
-                  <Link href="/" className="text-decoration-none small">
-                    <i className="bi bi-arrow-left me-1"></i> Back to product details
+                  <Link href="/" className="text-decoration-none small text-secondary">
+                    Cancel and return
                   </Link>
                 </div>
               </div>
@@ -296,8 +501,8 @@ export default function CheckoutPage() {
   return (
     <Suspense fallback={
       <div className="container text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading checkout...</span>
+        <div className="spinner-border text-dark" role="status">
+          <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     }>

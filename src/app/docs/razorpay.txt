@@ -1,0 +1,2863 @@
+---
+title: Standard Checkout - Integration Steps | Razorpay Payment Gateway
+heading: Integration Steps
+description: Steps to integrate the Standard Checkout form on your website.
+---
+
+# Integration Steps
+
+Follow these steps to integrate the Standard Checkout form on your website:
+
+  - **1. Build Integration**: Integrate Web Standard Checkout.
+
+  - **2. Test Integration**: Test the integration by making a test payment.
+
+  - **3. Go-live Checklist**: Check the go-live checklist.
+
+## 1. Build Integration
+
+Follow the steps given below:
+
+    
+### 1.1 Create an Order in Server
+
+         Given below are the order states and the corresponding payment states:
+
+         
+
+         Payment Stages | Order State | Payment State | Description
+         ---
+         Stage I | created | created | The customer submits the payment information, which is sent to Razorpay. The payment is **not processed** at this stage.
+         ---
+         Stage II | attempted | authorized/failed | An order moves from **created** to **attempted** state when payment is first attempted. It remains in this state until a payment associated with the order is captured.
+         ---
+         Stage III | paid | captured | After the payment moves to the **captured** state, the order moves to the **paid** state. - No more payment requests are allowed after an order moves to the **paid** state. 
+-  The order continues to be in this state even if the payment for this order is **refunded**.
+
+         
+
+         
+**INFO**
+
+**Capture Payments Automatically**
+
+You can capture payments automatically with the one-time [Payment Capture setting configuration](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md) on the Dashboard.
+
+         **Order is an important step in the payment process.**
+
+- An order should be created for every payment.
+- You can create an order using the [Orders API](#api-sample-code). It is a server-side API call. Know how to [authenticate](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/api-keys.md#generate-api-keys) Orders API.
+- The `order_id` received in the response should be passed to the checkout. This ties the order with the payment and secures the request from being tampered.
+
+**WARN**
+
+**Watch Out!**
+
+Payments made without an `order_id` cannot be captured and will be automatically refunded. You must create an order before initiating payments to ensure proper payment processing.
+
+You can create an order using:
+
+    
+        Use this endpoint to create an order using the Orders API.
+
+        /orders
+
+        ```curl: Curl
+        curl -X POST https://api.razorpay.com/v1/orders 
+        -U [YOUR_KEY_ID]:[YOUR_KEY_SECRET]
+        -H 'content-type:application/json'
+        -d '{
+            "amount": 50000,
+            "currency": "INR",
+            "receipt": "qwsaq1",
+            "partial_payment": true,
+            "first_payment_min_amount": 230
+        }'
+        ```java: Java
+        RazorpayClient razorpay = new RazorpayClient("[YOUR_KEY_ID]", "[YOUR_KEY_SECRET]");
+
+        JSONObject orderRequest = new JSONObject();
+        orderRequest.put("amount", 50000); // amount in the smallest currency unit
+        orderRequest.put("currency", "INR");
+        orderRequest.put("receipt", "order_rcptid_11");
+
+        Order order = razorpay.Orders.create(orderRequest);
+        } catch (RazorpayException e) {
+        // Handle Exception
+        System.out.println(e.getMessage());
+        }
+        ```Python: Python
+        import razorpay
+        client = razorpay.Client(auth=("YOUR_ID", "YOUR_SECRET"))
+
+        DATA = {
+            "amount": 50000,
+            "currency": "INR",
+            "receipt": "receipt#1",
+            "notes": {
+                "key1": "value3",
+                "key2": "value2"
+            }
+        }
+        client.order.create(data=DATA)
+        ```php: PHP
+        $api = new Api($key_id, $secret);
+
+        $api->order->create(array('receipt' => '123', 'amount' => 50000, 'currency' => 'INR', 'notes'=> array('key1'=> 'value3','key2'=> 'value2')));
+        ```csharp: .NET
+        RazorpayClient client = new RazorpayClient(your_key_id, your_secret);
+
+        Dictionary options = new Dictionary();
+        options.Add("amount", 50000); // amount in the smallest currency unit
+        options.add("receipt", "order_rcptid_11");
+        options.add("currency", "INR");
+        Order order = client.Order.Create(options);
+        ```ruby: Ruby
+        require "razorpay"
+        Razorpay.setup('YOUR_KEY_ID', 'YOUR_SECRET')
+
+        options = amount: 50000, currency: 'INR', receipt: ''
+        order = Razorpay::Order.create
+        ```javascript: Node.js
+        var instance = new Razorpay({ key_id: 'YOUR_KEY_ID', key_secret: 'YOUR_SECRET' })
+
+        instance.orders.create({
+        amount: 50000,
+        currency: "INR",
+        receipt: "receipt#1",
+        notes: {
+            key1: "value3",
+            key2: "value2"
+        }
+        })
+        ```go: Go
+        import ( razorpay "github.com/razorpay/razorpay-go" )
+        client := razorpay.NewClient("YOUR_KEY_ID", "YOUR_SECRET")
+
+        data := map[string]interface{}{
+        "amount": 50000,
+        "currency": "INR",
+        "receipt": "some_receipt_id"
+        }
+        body, err := client.Order.Create(data)
+        ```
+
+        ```json: Success Response
+        {
+            "id": "order_IluGWxBm9U8zJ8",
+            "entity": "order",
+            "amount": 50000,
+            "amount_paid": 0,
+            "amount_due": 50000,
+            "currency": "INR",
+            "receipt": "rcptid_11",
+            "offer_id": null,
+            "status": "created",
+            "attempts": 0,
+            "notes": [],
+            "created_at": 1642662092
+        }
+        ```json: Failure Response
+        {
+        "error": {
+            "code": "BAD_REQUEST_ERROR",
+            "description": "Order amount less than minimum amount allowed",
+            "source": "business",
+            "step": "payment_initiation",
+            "reason": "input_validation_failed",
+            "metadata": {},
+            "field": "amount"
+        }
+        }
+        ```
+    
+    
+        You can use the Postman workspace below to create an order:
+
+        [](https://www.postman.com/razorpaydev/workspace/razorpay-public-workspace/request/12492020-6f15a901-06ea-4224-b396-15cd94c6148d)
+
+        
+**INFO**
+
+**Handy Tips**
+
+Under the **Authorization** section in Postman, select **Basic Auth** and add the Key Id and secret as the Username and Password, respectively.
+
+        You can create an order manually by integrating the API sample codes on your server.
+    
+
+    
+        Request Parameters
+        
+
+`amount` _mandatory_
+: `integer` The transaction amount, expressed in the currency subunit. For example, for an actual amount of , the value of this field should be `22225`.
+
+`currency` _mandatory_
+: `string` The currency in which the transaction should be made.  See the [list of supported currencies](https://razorpay.com/docs/build/llm-docs/payments/international-payments.md#supported-currencies). Length must be of 3 characters.
+
+`receipt` _optional_
+: `string` Your receipt id for this order should be passed here. Maximum length is 40 characters.
+
+`notes` _optional_
+: `json object` Key-value pair that can be used to store additional information about the entity. Maximum 15 key-value pairs, 256 characters (maximum) each. For example, `"note_key": "Beam me up Scotty”`.
+
+`partial_payment` _optional_
+: `boolean` Indicates whether the customer can make a partial payment. Possible values:
+     - `true`: The customer can make partial payments.
+     - `false` (default): The customer cannot make partial payments.
+
+`first_payment_min_amount` _optional_
+: `integer` Minimum amount that must be paid by the customer as the first partial payment. For example, if an amount of ₹7,000 is to be received from the customer in two installments of #1 - ₹5,000, #2 - ₹2,000, then you can set this value as `500000`. This parameter should be passed only if `partial_payment` is `true`.
+
+        
+
+    
+### Response Parameters
+
+         Descriptions for the response parameters are present in the [Orders Entity](https://razorpay.com/docs/build/llm-docs/api/orders/entity.md) parameters table.
+        
+
+    
+### Error Response Parameters
+
+         The error response parameters are available in the [API Reference Guide](https://razorpay.com/docs/build/llm-docs/api/orders/create.md).
+        
+
+        
+    
+    
+### 1.2 Integrate with Checkout on Client-Side
+
+         Add the Pay button on your web page using the checkout code. You can use the handler function or callback URL.
+
+         
+         
+
+         
+            
+                1.2.1 Handler Function or Callback URL
+                
+                    
+
+                    **Handler Function** | **Callback URL**
+                    ---
+                    When you use this: - On successful payment, the customer is shown your web page. 
+-  On failure, the customer is notified of the failure and asked to retry the payment.
+ | When you use this: - On successful payment, the customer is redirected to the specified URL, for example, a payment success page. 
+-  On failure, the customer is asked to retry the payment.
+
+                    
+                
+
+         
+         
+            
+### 1.2.2 Code to Add Pay Button
+
+                 Copy-paste the parameters as `options` in your code:
+
+                 ```html: Callback URL (JS) Checkout Code
+                 Pay
+                 
+                 
+                 var options = {
+                     "key": "YOUR_KEY_ID", // Enter the Key ID generated from the Dashboard
+                     "amount": "50000", // Amount is in currency subunits. 
+                     "currency": "INR",
+                     "name": "Acme Corp", //your business name
+                     "description": "Test Transaction",
+                     "image": "https://example.com/your_logo",
+                     "order_id": "order_9A33XWu170gUtm", // This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                     "callback_url": "https://eneqd3r9zrjok.x.pipedream.net/",
+                     "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information especially their phone number
+                         "name": "Gaurav Kumar", //your customer's name
+                         "email": "gaurav.kumar@example.com",
+                         "contact": "+919876543210" //Provide the customer's phone number for better conversion rates 
+                     },
+                     "notes": {
+                         "address": "Razorpay Corporate Office"
+                     },
+                     "theme": {
+                         "color": "#3399cc"
+                     }
+                 };
+                 var rzp1 = new Razorpay(options);
+                 document.getElementById('rzp-button1').onclick = function(e){
+                     rzp1.open();
+                     e.preventDefault();
+                 }
+                 
+                 ```html: Handler Functions (JS) Checkout Code
+                 Pay
+                 
+                 
+                 var options = {
+                     "key": "YOUR_KEY_ID", // Enter the Key ID generated from the Dashboard
+                     "amount": "50000", // Amount is in currency subunits.
+                     "currency": "INR",
+                     "name": "Acme Corp", //your business name
+                     "description": "Test Transaction",
+                     "image": "https://example.com/your_logo",
+                     "order_id": "order_9A33XWu170gUtm", //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                     "handler": function (response){
+                         alert(response.razorpay_payment_id);
+                         alert(response.razorpay_order_id);
+                         alert(response.razorpay_signature)
+                     },
+                     "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information, especially their phone number
+                         "name": "Gaurav Kumar", //your customer's name
+                         "email": "gaurav.kumar@example.com", 
+                         "contact": "+919876543210"  //Provide the customer's phone number for better conversion rates 
+                     },
+                     "notes": {
+                         "address": "Razorpay Corporate Office"
+                     },
+                     "theme": {
+                         "color": "#3399cc"
+                     }
+                 };
+                 var rzp1 = new Razorpay(options);
+                 rzp1.on('payment.failed', function (response){
+                         alert(response.error.code);
+                         alert(response.error.description);
+                         alert(response.error.source);
+                         alert(response.error.step);
+                         alert(response.error.reason);
+                         alert(response.error.metadata.order_id);
+                         alert(response.error.metadata.payment_id);
+                 });
+                 document.getElementById('rzp-button1').onclick = function(e){
+                     rzp1.open();
+                     e.preventDefault();
+                 }
+                 
+                 ```
+                 
+                 
+**INFO**
+
+**Handy Tips**
+
+Test your integration using these [test cards](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/integration-steps.md#2-test-integration).
+
+                
+             
+            
+### 1.2.3 Checkout Options
+
+                 `key` _mandatory_
+: `string` API Key ID generated from the Dashboard.
+
+`amount` _mandatory_
+: `integer` Payment amount in the smallest currency subunit. For example, if the amount to be charged is , enter `222250` in this field. In the case of three decimal currencies, such as KWD, BHD and OMR, to accept a payment of 295.991, pass the value as 295990. And in the case of zero decimal currencies such as JPY, to accept a payment of 295, pass the value as 295.
+
+   
+**WARN**
+
+**Watch Out!**
+
+As per payment guidelines, you should pass the last decimal number as 0 for three decimal currency payments. For example, if you want to charge a customer 99.991 KD for a transaction, you should pass the value for the amount parameter as `99990` and not `99991`.
+
+`currency` _mandatory_
+: `string` The currency in which the payment should be made by the customer. See the list of [supported currencies](https://razorpay.com/docs/build/llm-docs/payments/international-payments.md#supported-currencies).
+
+   
+**INFO**
+
+**Handy Tips**
+
+Razorpay has added support for zero decimal currencies, such as JPY, and three decimal currencies, such as KWD, BHD, and OMR, allowing businesses to accept international payments in these currencies. Know more about [Currency Conversion](https://razorpay.com/docs/build/llm-docs/payments/international-payments/currency-conversion.md) (May 2024).
+
+`name` _mandatory_
+: `string` Your Business/Enterprise name shown on the Checkout form. For example, **Acme Corp**.
+
+`description` _optional_
+: `string` Description of the purchase item shown on the Checkout form. It should start with an alphanumeric character.
+
+`image` _optional_
+: `string` Link to an image (usually your business logo) shown on the Checkout form. Can also be a **base64** string if you are not loading the image from a network.
+
+`order_id` _mandatory_
+: `string` Order ID generated via [Orders API](https://razorpay.com/docs/build/llm-docs/api/orders.md).
+
+`prefill`
+: `object` You can prefill the following details at Checkout.
+
+   
+**INFO**
+
+**Boost Conversions and Minimise Drop-offs**
+
+- Autofill customer contact details, especially phone number to ease form completion. Include customer’s phone number in the `contact` parameter of the JSON request's `prefill` object. Format: +(country code)(phone number). Example: "contact": "+919000090000".   
+- This is not applicable if you do not collect customer contact details on your website before checkout, have Shopify stores or use any of the no-code apps.
+
+   `name` _optional_
+   : `string` Cardholder's name to be prefilled if customer is to make card payments on Checkout. For example, **Gaurav Kumar**.
+
+   `email` _optional_
+   : `string` Email address of the customer.
+
+   `contact` _optional_
+   : `string` Phone number of the customer. The expected format of the phone number is `+ {country code}{phone number}`. If the country code is not specified, `91` will be used as the default value. This is particularly important while prefilling `contact` of customers with phone numbers issued outside India. **Examples**:
+       - +14155552671 (a valid non-Indian number)
+       - +919977665544 (a valid Indian number). 
+If 9977665544 is entered, `+91` is added to it as +919977665544.
+
+   `method` _optional_
+   : `string` Pre-selection of the payment method for the customer. Will only work if `contact` and `email` are also prefilled. Possible values:
+       
+       - `card`
+
+       - `netbanking`
+
+       - `wallet`
+
+       - `upi`
+
+       - `emi`
+
+       
+
+`notes` _optional_
+: `object` Set of key-value pairs that can be used to store additional information about the payment. It can hold a maximum of 15 key-value pairs, each 256 characters long (maximum).
+
+`theme`
+: `object` Thematic options to modify the appearance of Checkout.
+
+   `color` _optional_
+   : `string` Enter your brand colour's HEX code to alter the text, payment method icons and CTA (call-to-action) button colour of the Checkout form.
+
+   `backdrop_color` _optional_
+   : `string` Enter a HEX code to change the Checkout's backdrop colour.
+
+`modal`
+: `object` Options to handle the Checkout modal.
+
+   `backdropclose` _optional_
+   : `boolean` Indicates whether clicking the translucent blank space outside the Checkout form should close the form. Possible values:
+       - `true`: Closes the form when your customer clicks outside the checkout form.
+       - `false` (default): Does not close the form when customer clicks outside the checkout form.
+
+   `escape` _optional_
+   : `boolean` Indicates whether pressing the **escape** key should close the Checkout form. Possible values:
+       - `true` (default): Closes the form when the customer presses the **escape** key.
+       - `false`: Does not close the form when the customer presses the **escape** key.
+
+   `handleback` _optional_
+   : `boolean` Determines whether Checkout must behave similar to the browser when back button is pressed. Possible values:
+       - `true` (default): Checkout behaves similarly to the browser. That is, when the browser's back button is pressed, the Checkout also simulates a back press. This happens as long as the Checkout modal is open.
+       - `false`: Checkout does not simulate a back press when browser's back button is pressed.
+
+   `confirm_close` _optional_
+   : `boolean` Determines whether a confirmation dialog box should be shown if customers attempts to close Checkout. Possible values:
+       - `true`: Confirmation dialog box is shown.
+       - `false` (default): Confirmation dialog box is not shown.
+  
+   `ondismiss` _optional_
+   : `function` Used to track the status of Checkout. You can pass a modal object with `ondismiss: function()\{\}` as options. This function is called when the modal is closed by the user. If `retry` is `false`, the `ondismiss` function is triggered when checkout closes, even after a failure.
+
+   `animation` _optional_
+   : `boolean` Shows an animation before loading of Checkout. Possible values:
+       - `true`(default): Animation appears.
+       - `false`: Animation does not appear.
+
+`subscription_id` _optional_
+: `string` If you are accepting recurring payments using Razorpay Checkout, you should pass the relevant `subscription_id` to the Checkout. Know more about [Subscriptions on Checkout](https://razorpay.com/docs/build/llm-docs/api/payments/subscriptions.md#checkout-integration).
+
+`subscription_card_change` _optional_
+: `boolean` Permit or restrict customer from changing the card linked to the subscription. You can also do this from the [hosted page](https://razorpay.com/docs/build/llm-docs/payments/subscriptions/payment-retries.md#update-the-payment-method-via-our-hosted-page). Possible values:
+   - `true`: Allow the customer to change the card from Checkout.
+   - `false` (default): Do not allow the customer to change the card from Checkout.
+
+`recurring` _optional_
+: `boolean` Determines if you are accepting [recurring (charge-at-will) payments on Checkout](https://razorpay.com/docs/build/llm-docs/api/payments/recurring-payments.md) via instruments such as emandate, paper NACH and so on. Possible values:
+   - `true`: You are accepting recurring payments.
+   - `false` (default): You are not accepting recurring payments.
+
+`callback_url` _optional_
+: `string` Customers will be redirected to this URL on successful payment. Ensure that the domain of the Callback URL is allowlisted.
+
+`redirect` _optional_
+: `boolean` Determines whether to post a response to the event handler post payment completion or redirect to Callback URL. `callback_url` must be passed while using this parameter. Possible values:
+   - `true`: Customer is redirected to the specified callback URL in case of payment failure.
+   - `false` (default): Customer is shown the Checkout popup to retry the payment with the suggested next best option.
+
+`customer_id` _optional_
+: `string` Unique identifier of customer. Used for:
+
+   - [Local saved cards feature](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/cards/features/saved-cards.md#manage-saved-cards).
+   - Static bank account details on Checkout in case of [Bank Transfer payment method](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/bank-transfer.md).
+
+`remember_customer` _optional_
+: `boolean` Determines whether to allow saving of cards. Can also be configured via the [Dashboard](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/checkout-features.md#flash-checkout). Possible values:
+   - `true`: Enables card saving feature.
+   - `false` (default): Disables card saving feature.
+
+`timeout` _optional_
+: `integer` Sets a timeout on Checkout, in seconds. After the specified time limit, the customer will not be able to use Checkout.
+
+    
+**WARN**
+
+**Watch Out!**
+
+Some browsers may pause `JavaScript` timers when the user switches tabs, especially in power saver mode. This can cause the checkout session to stay active beyond the set timeout duration.
+
+`readonly`
+: `object` Marks fields as read-only.
+
+   `contact` _optional_
+   : `boolean` Used to set the `contact` field as readonly. Possible values:
+       - `true`: Customer will not be able to edit this field.
+       - `false` (default): Customer will be able to edit this field.
+
+   `email` _optional_
+   : `boolean` Used to set the `email` field as readonly. Possible values:
+       - `true`: Customer will not be able to edit this field.
+       - `false` (default): Customer will be able to edit this field.
+      
+   `name` _optional_
+   : `boolean` Used to set the `name` field as readonly. Possible values:
+       - `true`: Customer will not be able to edit this field.
+       - `false` (default): Customer will be able to edit this field.
+
+`hidden`
+: `object` Hides the contact details.
+
+   `contact` _optional_
+   : `boolean` Used to set the `contact` field as optional. Possible values:
+       - `true`: Customer will not be able to view this field.
+       - `false` (default): Customer will be able to view this field.
+
+   `email` _optional_
+   : `boolean` Used to set the `email` field as optional. Possible values:
+       - `true`: Customer will not be able to view this field.
+       - `false` (default): Customer will be able to view this field.
+
+`send_sms_hash` _optional_
+: `boolean` Used to auto-read OTP for cards and netbanking pages. Applicable from Android SDK version 1.5.9 and above. Possible values:
+   - `true`: OTP is auto-read.
+   - `false` (default): OTP is not auto-read.
+
+`allow_rotation` _optional_
+: `boolean` Used to rotate payment page as per screen orientation. Applicable from Android SDK version 1.6.4 and above. Possible values:
+   - `true`: Payment page can be rotated.
+   - `false` (default): Payment page cannot be rotated.
+
+`retry` _optional_
+: `object` Parameters that enable retry of payment on the checkout.
+
+   `enabled`
+   : `boolean` Determines whether the customers can retry payments on the checkout. Possible values:
+       - `true` (default): Enables customers to retry payments.
+       - `false`: Disables customers from retrying the payment.
+  
+   `max_count`
+   : `integer` The number of times the customer can retry the payment. We recommend you to set this to 4. Having a larger number here can cause loops to occur.
+       
+**WARN**
+
+**Watch Out!**
+
+Web Integration does not support the `max_count` parameter. It is applicable only in Android and iOS SDKs.
+
+  
+`config` _optional_
+: `object` Parameters that enable checkout configuration. Know more about how to [configure payment methods on Razorpay standard checkout](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods.md).
+  
+   `display`
+   : `object` Child parameter that enables configuration of checkout display language.
+
+       `language`
+       : `string` The language in which checkout should be displayed. Possible values:
+           - `en`: English
+           - `ben`: Bengali
+           - `hi`: Hindi
+           - `mar`: Marathi
+           - `guj`: Gujarati
+           - `tam`: Tamil
+           - `tel`: Telugu
+
+                 
+**INFO**
+
+**Handy Tips**
+
+The open method of Razorpay object (`rzp1.open()`) must be invoked by your site's JavaScript, which may or may not be a user-driven action such as a click.
+
+                
+
+            
+### 1.2.4 Errors
+
+                 Given below is a list of errors you may face while integrating with checkout on the client-side.
+
+                 
+
+                 Error | Cause | Solution
+                 ---
+                 The id provided does not exist. | Occurs when there is a mismatch between the API keys used while creating the `order_id`/`customer_id` and the API key passed in the checkout. | Make sure that the API keys passed in the checkout are the same as the API keys used while creating the `order_id`/`customer_id`.
+                 ---
+                 Blocked by CORS policy. | Occurs when the server-to-server request is hit from the front end instead. | Make sure that the API calls are made from the server side and not the client side.
+                 
+                
+
+            
+            
+### 1.2.5 Configure Payment Methods *(Optional)*
+
+                 Multiple payment methods are available on the Razorpay Web Standard Checkout.
+                 - The payment methods are **fixed** and cannot be changed.
+                 - You can configure the order or make certain payment methods prominent. Know more about [configuring payment methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods.md).
+                 
+
+            
+         
+        
+    
+    
+### 1.3 Handle Payment Success and Failure
+
+         The way the Payment Success and Failure scenarios are handled depends on the [Checkout Sample Code](#122-code-to-add-pay-button) you used in the last step.
+
+         ### Checkout with Handler Function
+
+         If you used the sample code with the handler function:
+
+         
+             
+                 #### On Payment Success
+
+                 The customer sees your website page. The checkout returns the response object of the successful payment (**razorpay_payment_id**, **razorpay_order_id** and **razorpay_signature**). Collect these and send them to your server.
+             
+
+             
+
+                 #### On Payment Failure
+
+                 The customer is notified about payment failure and asked to retry the payment. Know about the [error parameters.](https://razorpay.com/docs/build/llm-docs/errors.md#response-parameters)
+                     ```js: Failure Handling Code
+                     rzp1.on('payment.failed', function (response){
+                         alert(response.error.code);
+                         alert(response.error.description);
+                         alert(response.error.source);
+                         alert(response.error.step);
+                         alert(response.error.reason);
+                         alert(response.error.metadata.order_id);
+                         alert(response.error.metadata.payment_id);
+                     }
+                     ```
+             
+         
+         ### Checkout with Callback URL
+
+         If you used the sample code with the callback URL:
+
+         
+             
+                 #### On Payment Success 
+
+                 Razorpay makes a POST call to the callback URL with the **razorpay_payment_id**, **razorpay_order_id** and **razorpay_signature** in the response object of the successful payment. Only successful authorisations are auto-submitted.
+             
+             
+                 #### On Payment Failure
+
+                 In case of failed payments, the checkout is displayed again to facilitate payment retry.
+             
+         
+        
+
+    
+### 1.4 Store Fields in Your Server
+
+         A successful payment returns the following fields to the Checkout form.
+
+  
+    Success Callback
+    
+- You need to store these fields in your server.
+- You can confirm the authenticity of these details by verifying the signature in the next step.
+
+```json: Success Callback
+{
+  "razorpay_payment_id": "pay_29QQoUBi66xm2f",
+  "razorpay_order_id": "order_9A33XWu170gUtm",
+  "razorpay_signature": "9ef4dffbfd84f1318f6739a3ce19f9d85851857ae648f114332d8401e0949a3d"
+}
+```
+
+`razorpay_payment_id`
+: `string` Unique identifier for the payment returned by Checkout **only** for successful payments.
+
+`razorpay_order_id`
+: `string` Unique identifier for the order returned by Checkout.
+
+`razorpay_signature`
+: `string` Signature returned by the Checkout. This is used to verify the payment.
+    
+
+        
+    
+    
+### 1.5 Verify Payment Signature
+
+         This is a mandatory step to confirm the authenticity of the details returned to the Checkout form for successful payments.
+
+  
+    To verify the `razorpay_signature` returned to you by the Checkout form:
+    
+     1. Create a signature in your server using the following attributes:
+        - `order_id`: Retrieve the `order_id` from your server. Do not use the `razorpay_order_id` returned by Checkout.
+        - `razorpay_payment_id`: Returned by Checkout.
+        - `key_secret`: Available in your server. The `key_secret` that was generated from the [Dashboard](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/api-keys.md#generate-api-keys).
+
+     2. Use the SHA256 algorithm, the `razorpay_payment_id` and the `order_id` to construct a HMAC hex digest as shown below:
+
+         ```html: HMAC Hex Digest
+         generated_signature = hmac_sha256(order_id + "|" + razorpay_payment_id, secret);
+
+           if (generated_signature == razorpay_signature) {
+             payment is successful
+           }
+         ```
+         
+     3. If the signature you generate on your server matches the `razorpay_signature` returned to you by the Checkout form, the payment received is from an authentic source.
+    
+
+  
+### Generate Signature on Your Server
+
+Given below is the sample code for payment signature verification:
+
+```java: Java
+RazorpayClient razorpay = new RazorpayClient("[YOUR_KEY_ID]", "[YOUR_KEY_SECRET]");
+
+String secret = "EnLs21M47BllR3X8PSFtjtbd";
+
+JSONObject options = new JSONObject();
+options.put("razorpay_order_id", "order_IEIaMR65cu6nz3");
+options.put("razorpay_payment_id", "pay_IH4NVgf4Dreq1l");
+options.put("razorpay_signature", "0d4e745a1838664ad6c9c9902212a32d627d68e917290b0ad5f08ff4561bc50f");
+
+boolean status =  Utils.verifyPaymentSignature(options, secret);
+
+```php: PHP
+$api = new Api($key_id, $secret);
+
+$api->utility->verifyPaymentSignature(array('razorpay_order_id' => $razorpayOrderId, 'razorpay_payment_id' => $razorpayPaymentId, 'razorpay_signature' => $razorpaySignature));
+
+```ruby: Ruby
+require "razorpay"
+Razorpay.setup('YOUR_KEY_ID', 'YOUR_SECRET')
+
+payment_response = {
+       razorpay_order_id: 'order_IEIaMR65cu6nz3',
+       razorpay_payment_id: 'pay_IH4NVgf4Dreq1l',
+       razorpay_signature: '0d4e745a1838664ad6c9c9902212a32d627d68e917290b0ad5f08ff4561bc50f'
+     }
+Razorpay::Utility.verify_payment_signature(payment_response)
+
+```python: Python
+import razorpay
+client = razorpay.Client(auth=("YOUR_ID", "YOUR_SECRET"))
+
+client.utility.verify_payment_signature({
+  'razorpay_order_id': razorpay_order_id,
+  'razorpay_payment_id': razorpay_payment_id,
+  'razorpay_signature': razorpay_signature
+  })
+
+```c: .NET
+RazorpayClient client = new RazorpayClient("[YOUR_KEY_ID]", "[YOUR_KEY_SECRET]");
+
+Dictionary options = new Dictionary();
+options.Add("razorpay_order_id", "order_IEIaMR65");
+options.Add("razorpay_payment_id", "pay_IH4NVgf4Dreq1l");
+options.Add("razorpay_signature", "0d4e745a1838664ad6c9c9902212a32d627d68e917290b0ad5f08ff4561bc50");
+
+Utils.verifyPaymentSignature(options);
+
+```nodejs: Node.js
+var instance = new Razorpay({ key_id: 'YOUR_KEY_ID', key_secret: 'YOUR_SECRET' })
+
+var { validatePaymentVerification, validateWebhookSignature } = require('./dist/utils/razorpay-utils');
+validatePaymentVerification({"order_id": razorpayOrderId, "payment_id": razorpayPaymentId }, signature, secret);
+
+```Go: Go
+import ( razorpay "github.com/razorpay/razorpay-go" )
+client := razorpay.NewClient("YOUR_KEY_ID", "YOUR_SECRET")
+
+params := map[string]interface{}{
+ "razorpay_order_id": "order_IEIaMR65cu6nz3",
+ "razorpay_payment_id": "pay_IH4NVgf4Dreq1l",
+}
+
+signature := "0d4e745a1838664ad6c9c9902212a32d627d68e917290b0ad5f08ff4561bc50f";
+secret := "EnLs21M47BllR3X8PSFtjtbd";
+utils.VerifyPaymentSignature(params, signature, secret)
+```
+
+    
+
+  
+### Post Signature Verification
+
+After you have completed the integration, you can [set up webhooks](https://razorpay.com/docs/build/llm-docs/webhooks/setup-edit-payments.md), make test payments, replace the test key with the live key and integrate with other [APIs](https://razorpay.com/docs/build/llm-docs/api.md).
+    
+
+         
+
+         Here are the links to our [SDKs](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard.md#client-libraries) for the supported platforms.
+         
+        
+    
+    
+### 1.6 Verify Payment Status
+
+         
+**INFO**
+
+**Handy Tips**
+
+On the Razorpay Dashboard, ensure that the payment status is `captured`. Refer to the payment capture settings page to know how to [capture payments automatically](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md).
+
+    
+        You can track the payment status in three ways:
+        
+
+    
+        To verify the payment status from the Razorpay Dashboard:
+
+        1. Log in to the Razorpay Dashboard and navigate to **Transactions** → **Payments**.
+        2. Check if a **Payment Id** has been generated and note the status. In case of a successful payment, the status is marked as **Captured**.
+        
+    
+    
+        You can use Razorpay webhooks to configure and receive notifications when a specific event occurs. When one of these events is triggered, we send an HTTP POST payload in JSON to the webhook's configured URL. Know how to [set up webhooks.](https://razorpay.com/docs/build/llm-docs/webhooks/setup-edit-payments.md)
+
+        #### Example
+        If you have subscribed to the `order.paid` webhook event, you will receive a notification every time a customer pays you for an order.
+    
+    
+        [Poll Payment APIs](https://razorpay.com/docs/build/llm-docs/api/payments/fetch-all-payments.md) to check the payment status.
+    
+
+        
+
+        
+    
+
+## 2. Test Integration
+
+After the integration is complete, a **Pay** button appears on your webpage/app. 
+
+Click the button and make a test transaction to ensure the integration is working as expected. You can start accepting actual payments from your customers once the test transaction is successful.
+
+**WARN**
+
+**Watch Out!**
+
+This is a mock payment page that uses your test API keys, test card and payment details. 
+- Ensure you have entered only your [Test Mode API keys](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/api-keys.md#generate-api-keys) in the Checkout code. 
+- Test mode features a mock bank page with **Success** and **Failure** buttons to replicate the live payment experience.
+- No real money is deducted due to the usage of test API keys. This is a simulated transaction.
+
+Following are all the payment modes that the customer can use to complete the payment on the Checkout. Some of them are available by default, while others may require approval from us. Raise a request from the Dashboard to enable such payment methods.
+
+Payment Method | Code | Availability
+---
+[Debit Card](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/cards.md) | `debit` | ✓
+---
+[Credit Card](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/cards.md) | `credit` | ✓
+---
+[Netbanking](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/netbanking.md) | `netbanking`| ✓
+---
+[UPI](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/upi.md) | `upi` | ✓
+---
+EMI - [Credit Card EMI](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/credit-card-emi.md), [Debit Card EMI](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/debit-card-emi.md) and [No Cost EMI](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/no-cost-emi.md) | `emi` | ✓
+---
+[Wallet](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/wallets.md) | `wallet` | ✓
+---
+[Cardless EMI](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/cardless-emi.md) | `cardless_emi` | Requires [Approval](https://razorpay.com/support).
+---
+[Bank Transfer](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/bank-transfer.md) | `bank_transfer` | Requires [Approval](https://razorpay.com/support) and Integration.
+---
+[Emandate](https://razorpay.com/docs/build/llm-docs/payments/recurring-payments/emandate/integrate.md) | `emandate` | Requires [Approval](https://razorpay.com/support) and Integration.
+---
+[Pay Later](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/pay-later.md)| `paylater` | Requires [Approval](https://razorpay.com/support).
+
+You can make test payments using one of the payment methods configured at the Checkout.
+
+    
+### Netbanking
+
+         You can select any of the listed banks. After choosing a bank, Razorpay will redirect to a mock page where you can make the payment `success` or a `failure`. Since this is Test Mode, we will not redirect you to the bank login portals.
+
+         Check the list of [supported banks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/netbanking.md#supported-banks).
+        
+
+    
+### UPI
+
+         You can enter one of the following UPI IDs:
+
+         - `success@razorpay`: To make the payment successful. 
+         - `failure@razorpay`: To fail the payment.
+
+         Check the list of [supported UPI flows](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/upi.md).
+
+         
+**INFO**
+
+**Handy Tips**
+
+You can use **Test Mode** to test UPI payments, and **Live Mode** for UPI Intent and QR payments.
+
+        
+
+    
+### Cards
+
+         You can use the following test cards to test transactions for your integration in Test Mode.
+
+         ### Domestic Cards
+
+         Use the following test cards for Indian payments:
+
+         
+         Network | Card Number | CVV & Expiry Date
+         ---
+         Visa  | 4100 2800 0000 1007 | Use a random CVV and any future date ^^^^^
+         ---
+         Mastercard | 5500 6700 0000 1002 | 
+         ---
+         RuPay | 6527 6589 0000 1005 | 
+         ---
+         Diners | 3608 280009 1007 | 
+         ---
+         Amex | 3402 560004 01007 | 
+         
+
+         #### Error Scenarios
+
+         Use these test cards to simulate payment errors. See the [complete list](https://razorpay.com/docs/build/llm-docs/payments/payments/test-card-details.md#error-scenario-test-cards) of error test cards with detailed scenarios.
+         Check the following lists: 
+         - [Supported Card Networks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/cards.md).
+         - [Cards Error Codes](https://razorpay.com/docs/build/llm-docs/errors/payments/cards.md).
+
+         ### International Cards
+
+         Use the following test cards to test international payments. Use any valid expiration date in the future in the MM/YY format and any random CVV to create a successful payment.
+
+         
+         Card Network | Card Number | CVV & Expiry Date
+         ---
+         Mastercard | 5555 5555 5555 4444
+5105 1051 0510 5100
+5104 0600 0000 0008 | Use a random CVV and any future date ^^
+         ---
+         Visa | 4012 8888 8888 1881 |
+         
+
+         Check the list of [supported card networks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/cards.md).
+        
+
+    
+### Wallet
+
+         You can select any of the listed wallets. After choosing a wallet, Razorpay will redirect to a mock page where you can make the payment `success` or a `failure`. Since this is Test Mode, we will not redirect you to the wallet login portals.
+
+         Check the list of [supported wallets](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/wallets.md#supported-wallets).
+        
+
+## 3. Go-live Checklist
+
+Check the go-live checklist for Razorpay Web Standard Checkout integration. Consider these steps before taking the integration live.
+
+    
+### 3.1 Accept Live Payments
+
+         Perform an end-to-end simulation of funds flow in the Test Mode. Once confident that the integration is working as expected, switch to the Live Mode and start accepting payments from customers.
+
+**WARN**
+
+**Watch Out!**
+
+Ensure you are switching your test API keys with API keys generated in Live Mode.
+
+To generate API Keys in Live Mode on your Razorpay Dashboard:
+
+1. Log in to the Razorpay Dashboard and switch to **Live Mode** on the menu.
+1. Navigate to **Account & Settings** → **API Keys** → **Generate Key** to generate the API Key for Live Mode.
+1. Download the keys and save them securely.
+1. Replace the Test API Key with the Live Key in the Checkout code and start accepting actual payments.
+
+        
+
+    
+### 3.2 Payment Capture
+
+         After payment is `authorized`, you need to capture it to settle the amount to your bank account as per the settlement schedule. Payments that are not captured are auto-refunded after a fixed time.
+
+**WARN**
+
+**Watch Out**
+
+- You should deliver the products or services to your customers only after the payment is captured. Razorpay automatically refunds all the uncaptured payments.
+- You can track the payment status using our [Fetch a Payment API](https://razorpay.com/docs/build/llm-docs/api/payments.md#fetch-a-payment) or webhooks.
+
+  
+    Authorized payments can be automatically captured. You can auto-capture all payments [using global settings](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md#auto-capture-all-payments) on the Razorpay Dashboard. Know more about [capture settings for payments](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md).
+
+    
+**WARN**
+
+**Watch Out!**
+
+Payment capture settings work only if you have integrated with Orders API on your server side. Know more about the [Orders API](https://razorpay.com/docs/build/llm-docs/api/orders/create.md).
+
+  
+  
+    Each authorized payment can also be captured individually. You can manually capture payments using [Payment Capture API](https://razorpay.com/docs/build/llm-docs/api/payments.md#capture-a-payment) or [Dashboard](https://razorpay.com/docs/build/llm-docs/payments/payments/dashboard.md#manually-capture-payments). Know more about [capture settings for payments](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md).
+  
+
+        
+
+    
+### 3.3 Set Up Webhooks
+
+         Ensure you have [set up webhooks](https://razorpay.com/docs/build/llm-docs/webhooks/setup-edit-payments.md) in the live mode and configured the events for which you want to receive notifications.
+
+         
+**WARN**
+
+**Implementation Considerations**
+
+Webhooks are the primary and most efficient method for event notifications. They are delivered asynchronously in near real-time. For critical user-facing flows that need instant confirmation (like showing "Payment Successful" immediately), supplement webhooks with API verification.
+
+**Recommended approach** 
+
+- Rely on webhooks for all automation, which can be asynchronous.
+- If a critical user-facing flow requires instant status, but the webhook notification has not arrived within the time mandated by your business needs, perform an immediate API Fetch call ([Payments](https://razorpay.com/docs/build/llm-docs/api/payments/fetch-with-id.md), [Orders](https://razorpay.com/docs/build/llm-docs/api/orders/fetch-with-id.md) and [Refunds](https://razorpay.com/docs/build/llm-docs/api/refunds/fetch-specific-refund-payment.md)) to verify the status.
+
+        
+
+ Dashboard:
+
+1. Log in to the Razorpay Dashboard and switch to **Live Mode** on the menu.
+1. Navigate to **Account & Settings** → **API Keys** → **Generate Key** to generate the API Key for Live Mode.
+1. Download the keys and save them securely.
+1. Replace the Test API Key with the Live Key in the Checkout code and start accepting actual payments.
+
+        
+    
+    
+### 3.2 Set Up Webhooks
+
+         Ensure you have [set up webhooks](https://razorpay.com/docs/build/llm-docs/webhooks/setup-edit-payments.md) in the live mode and configured the events for which you want to receive notifications.
+
+         
+**WARN**
+
+**Implementation Considerations**
+
+Webhooks are the primary and most efficient method for event notifications. They are delivered asynchronously in near real-time. For critical user-facing flows that need instant confirmation (like showing "Payment Successful" immediately), supplement webhooks with API verification.
+
+**Recommended approach** 
+
+- Rely on webhooks for all automation, which can be asynchronous.
+- If a critical user-facing flow requires instant status, but the webhook notification has not arrived within the time mandated by your business needs, perform an immediate API Fetch call ([Payments](https://razorpay.com/docs/build/llm-docs/api/payments/fetch-with-id.md), [Orders](https://razorpay.com/docs/build/llm-docs/api/orders/fetch-with-id.md) and [Refunds](https://razorpay.com/docs/build/llm-docs/api/refunds/fetch-specific-refund-payment.md)) to verify the status.
+---
+title: About Payment Methods Configuration
+description: Configure the payment methods of your choice at Razorpay Checkout.
+---
+
+# About Payment Methods Configuration
+
+You can configure the payment methods of your choice on the Razorpay Checkout to provide a highly personalised experience for your customers. This provides a simple and accessible experience to your customers increasing your sales and your success rates.
+
+  
+ 
+
+## Use Cases
+
+Depending on the use cases that you might have, Razorpay allows you to create any configuration of the payment methods, of your choice:
+
+- **Highlighting certain payment instruments on the Checkout.** For example, **Google Pay** could be displayed outside the UPI block as a separate payment method. **HDFC Netbanking** could come out of the Netbanking container as a different payment method.
+
+- **Restricting the kind of network, issuer, BIN and card type, different card properties, to accept payments.** For example, you can choose to accept payments only from **HDFC Visa Debit cards** on the Checkout.
+
+- **Removing a certain payment method or instrument.** For example, any wallet can be removed as a payment instrument from wallets. The entire **Netbanking** block or a certain bank in Netbanking can be removed from the Checkout.
+
+- **Reordering of payment methods on the Checkout.** You can choose to arrange **UPI** as the first section instead of **Cards** on the Checkout. You can again order the PSPs within the UPI block according to your need.
+
+- **Grouping of payment instruments.** For example, you can choose to group **Netbanking** and **UPI** payment methods of a bank as a block that will be labelled as **Pay via Bank** on the Checkout.
+
+## Configuring Payment Methods
+
+To control payment methods on the Checkout, there are different ways to pass the configuration to the Checkout:
+
+- **Configure via Dashboard**: Choose the payment methods and instruments you want to display at checkout, arrange them in your preferred order, and tailor the checkout experience to match your business needs. Create custom payment blocks for specific customer segments on the Razorpay Dashboard. Know more about [Payment Configuration](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/payment-configuration.md).
+
+- **Pass Configuration at Runtime**: Pass the configuration to the `options` parameter of the Checkout code at the run time.  This is useful when you want to modify the order of the payment methods for a particular set of payments while rendering the Checkout. See the [Sample Code](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/sample-code.md) for details.
+
+- **Use a Configuration ID**: Create a global setting of the payments as a **Configuration ID** and pass these values while creating the Order. This is useful when you want control the checkout configurations dynamically using different **Configuration IDs**. You can create a **Configuration ID** through the [Dashboard](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/payment-configuration.md). There are two ways to pass the Configuration ID:
+  - While creating the order: Add the `checkout_config_id` field in the order creation request.
+  - While opening the checkout: Include the `checkout_config_id` in the checkout options.
+
+  ```json: Pass config id
+  "checkout_config_id": "YourConfigIDHere"
+  ```
+
+## Next Steps
+
+[Understand the Configuration](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/understand-configuration.md)
+
+### Related Information
+
+- [Customise Checkout Appearance](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/checkout-styling.md)
+- [Customise Checkout Experience](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/checkout-features.md)
+- [Customise Payment Methods on Checkout](https://razorpay.com/docs/build/llm-docs/payments/dashboard/account-settings/payment-configuration.md)
+- [Supported Methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md)
+- [Sample Codes](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/sample-code.md)
+---
+title: Understand the Configuration
+description: Understand the building blocks that are required to build a configuration of your choice.
+---
+
+# Understand the Configuration
+
+Let us understand the building blocks that are required to build a configuration of your choice:
+
+1. [Payment Methods](#payment-methods)
+2. [Payment Instruments](#payment-instruments)
+3. [Blocks](#blocks)
+4. [Sequence](#sequence)
+5. [Preferences](#preferences)
+
+## Payment Methods
+
+Before deciding the payment methods or payment instruments that you want to configure on the Checkout, refer to the [payment methods](https://razorpay.com/docs/build/llm-docs/payments/payment-methods.md) supported by Razorpay.
+
+## Payment Instruments
+
+A payment instrument is a combination of the payment method and its associated properties. For example, a payment instrument can be an **AXIS Debit card**, where **card** is the payment method and the issuer (AXIS bank) is the associated **instrument**.
+
+An instrument is a JSON object with a key named `method`. Each method and its associated properties are described in the sections below:
+
+### Card
+
+Payment instruments for the `method: card` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+issuers | array | List of issuers that are allowed | [Any bank code](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-banks) | `issuers: ["HDFC", "ICIC"]`
+---
+networks | array | List networks that are allowed | [Any card network](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-card-networks) | `networks: ["Visa", "MasterCard"]`
+---
+types | array | List of card types that are allowed | [Any card type](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-cards) | `types: ["credit", "debit"]`
+
+```js: JavaScript
+// beginning of the code
+....
+card: { \\name for cards
+    name: "Pay Via Cards"
+    instruments: [
+      {
+        method: "card",
+        issuers: ["HDFC"],
+        networks: ["Visa"],
+        types: ["debit","credit"]
+      }
+    ]
+},
+...
+//rest of the code
+```
+
+### Netbanking
+
+Payment instruments for the `method: netbanking` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+banks | array`` | List of all banks that are allowed | [Any bank code](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-banks) | `banks: ["HDFC", "ICIC"]`
+
+### Wallet
+
+Payment instruments for the `method: wallet` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+wallets | string | Wallets to be allowed | [Any wallet code](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-wallets) | `wallets: ["payzapp"]`
+
+### UPI
+
+Payment instruments for the  `method: upi` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+flows | string | Flows to show | [Any supported UPI flow](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-upi-flows) | `flows: [ "qr"]`
+---
+apps | string | Apps to show, for intent | [Any supported UPI apps](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-upi-apps) | `apps: ["google_pay", "phonepe"]`
+
+### EMI
+
+Payment instruments for the  `method: emi` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+issuers | array``  | Providers to be allowed | [Any EMI issuers](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-emi-providers) | `issuers: ["HDFC, ICIC"]`
+---
+types | array``  | Providers to be allowed | Any [credit](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-credit-card-emi-providers) and [debit](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-debit-card-emi-providers) card EMI type | `types: ["debit, credit"]`
+---
+iins | array`` | Providers to be allowed | [Any EMI IIN](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-emi-providers) | `iins: ["438600"]`
+
+### Cardless EMI
+
+Payment instruments for the  `method: cardless_emi` are listed below:
+
+Name | Type | Description | Values | Examples
+---
+providers | string | Providers to be allowed | [Any Cardless EMI provider](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-cardless-emi-providers) | `providers: ["zestmoney"]`
+
+### Pay Later
+
+For the  method: `paylater`, the payment instruments are listed below:
+
+Name | Type | Description | Values | Examples
+---
+providers | string | Providers to be allowed | [Any paylater provider](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-paylater-providers) | `providers: ["hdfc"]`
+
+### Apps
+
+For the method `app`, the payment instrument is listed below:
+
+Name | Type | Description | Values | Examples
+---
+providers | string | Providers to be allowed | [Any app provider](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md#supported-apps) | `providers: ["cred"]`
+
+```js: JavaScript
+// beginning of the code
+....
+{
+  "custom": {
+    "name": "Pay with Apps",
+    "instruments": [
+      {
+        "method": "app",
+        "providers": [
+          "cred"
+        ]
+      }
+    ]
+  }
+}
+...
+//rest of the code
+```
+
+## Blocks
+
+A block is a collection of one or more payment instruments. Each block has a `name` and `code` associated as shown below:
+
+```js: JavaScript
+// Block creation
+let myPayments = {
+  name: "My Custom Block",
+  instruments: ["gpay"]
+};
+// Usage in config
+let config = {
+  display: {
+    blocks: {
+      highlighted: myPayments
+    }
+  }
+};
+```
+
+Here, `highlighted` is the code associated with `myPayments`. Multiple blocks can be added to the config at the same time.
+
+## Sequence
+
+You can specify the `sequence`, that is the order, in which the payment methods should be displayed on the Checkout.
+
+A sequence is an `array` of strings, where each string is the name of the payment method or a `block`.
+
+In a sequence, you can include any block using the `block.${code}` format. The block with code **highlighted** should be represented as `block.highlighted` as shown below:
+
+```js: JavaScript
+let sequence = ["block.highlighted", "upi", "netbanking"];
+```
+
+The above sequence will place the code `highlighted` first followed by the payment methods `upi` and `netbanking` in that particular order.
+
+**INFO**
+
+**Handy Tips**
+
+Every block defined has to be present in the sequence. If you do not wish to reorder the methods and want to place your block, the sequence should contain `block.highlighted` with just one item in it.
+
+## Preferences
+
+Using the `preferences` object, you can enhance the configuration of the Checkout. By setting this value, you can decide whether the default list of payment methods should be displayed or not.
+
+Possible values are:
+
+`true`
+: Checkout will display the sequence of the payment methods configured by you alongside with the default order of payment methods available in the Checkout.
+
+`false`
+: Checkout will only show the sequence of the payment methods configured by you.
+
+## Hide Payment Instruments
+
+You can also hide or remove certain instruments from the Checkout.
+
+This is an `array` containing the `method` key used to hide either the payment method and/or the payment instrument associated with that payment method. For example, you can hide the methods, `card` and `HDFC netbanking` on the Checkout.
+
+```js: JavaScript
+let cardInstrument = {
+  method: "card"
+};
+
+let instrumentOfSomeBank = {
+  method: "netbanking",
+  banks: ["HDFC"]
+};
+
+let hiddenInstruments = [cardInstrument, instrumentOfSomeBank];
+```
+
+This is an `array` containing the `method` key used to hide either the payment method and/or the payment instrument associated with that payment method. For example, you can hide the methods, `card` and `Axis netbanking` on the Checkout.
+
+```js: JavaScript
+let cardInstrument = {
+  method: "card"
+};
+
+let instrumentOfSomeBank = {
+  method: "netbanking",
+  banks: ["UTIB"]
+};
+
+let hiddenInstruments = [cardInstrument, instrumentOfSomeBank];
+```
+
+**INFO**
+
+**Handy Tips**
+
+Hiding any instrument using `hide` does not affect the similar instrument defined in `blocks`. So, if you want to hide `UTIB` bank from `netbanking` and have defined the same instrument in one of your blocks, Axis bank will still be displayed in that block.
+
+## Next Steps
+
+[Display the Configuration](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/display-configuration.md)
+
+### Related Information
+
+- [Supported Methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md)
+- [Sample Codes](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/sample-code.md)
+---
+title: Display the Configuration
+description: Display the configured payment methods on Razorpay Checkout.
+---
+
+# Display the Configuration
+
+The `display` configuration can be passed in the Checkout options.
+
+You can use the `display` configuration to put together all the modules, that is, `blocks`, `sequence`, `preferences`, and `hide` instruments as shown below:
+
+```js: display configuration
+let config = {
+  display: {
+    blocks: {
+      code: {
+        name: "The name of the block", // The title of the block
+        instruments: [instrument, instrument] // The list of instruments
+      },
+
+      anotherCode: {
+        name: "Another block",
+        instruments: [instrument]
+      }
+    },
+
+    hide: [
+      {
+        method: "method"
+      }
+    ],
+
+    sequence: ["block.code"], // The sequence in which blocks and methods should be shown
+
+    preferences: {
+      show_default_blocks: true // Should Checkout show its default blocks?
+    }
+  }
+};
+
+```js: JavaScript Checkout options
+// beginning of the Checkout code
+.....
+
+let options = {
+  key: "[YOUR_KEY_ID]",
+  amount: 60000,
+  currency: "INR",
+
+  config: {
+    display: {
+      // The display config
+    }
+  }
+};
+
+let razorpay = new Razorpay(options);
+
+razorpay.open();
+....
+//rest of the Checkout code
+
+```
+
+## Checkout options
+
+Descriptions for the checkout options parameters are present in the [Checkout Options](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/integration-steps.md#123-checkout-options) table.
+
+## Orders API Sample Code
+
+Given below is the sample code:
+
+```curl: Curl
+curl -u [YOUR_KEY_ID]:[YOUR_KEY_SECRET]
+-X POST https://api.razorpay.com/v1/orders
+-H "content-type: application/json"
+-d '{
+  "amount": 50000,
+  "currency": "INR",
+  "receipt": "receipt#1",
+  "checkout_config_id": "config_Ep0eOCwdSfgkco"
+}'
+```python: Python
+import razorpay
+client = razorpay.Client(auth=("YOUR_ID", "YOUR_SECRET"))
+
+client.order.create({
+  "amount": 50000,
+  "currency": "INR",
+  "receipt": "receipt#1",
+  "checkout_config_id": "config_Ep0eOCwdSfgkco"
+ })
+```php: PHP
+$api = new Api($key_id, $secret);
+
+$api->order->create(array('receipt' => 'receipt#1', 'amount' => 50000, 'currency' => 'INR', 'checkout_config_id' => 'config_Ep0eOCwdSfgkco'));
+
+```csharp: .NET
+RazorpayClient client = new RazorpayClient("[YOUR_KEY_ID]", "[YOUR_KEY_SECRET]");
+
+Dictionary options = new Dictionary();
+options.Add("amount", 50000); // amount in the smallest currency unit
+options.Add("receipt", "receipt#1");
+options.Add("currency", "INR");
+options.Add("checkout_config_id", "config_Ep0eOCwdSfgkco");
+Order order = client.Order.Create(options);
+
+```js: Node.js
+var instance = new Razorpay({ key_id: 'YOUR_KEY_ID', key_secret: 'YOUR_SECRET' })
+
+instance.orders.create({
+  amount: 50000,
+  currency: "INR",
+  receipt: "receipt#1",
+  checkout_config_id: "config_Ep0eOCwdSfgkco"
+})
+
+```go: Go
+import ( razorpay "github.com/razorpay/razorpay-go" )
+client := razorpay.NewClient("YOUR_KEY_ID", "YOUR_SECRET")
+
+data := map[string]interface{}{
+  "amount": 50000,
+  "currency": "INR",
+  "receipt": "receipt#1",
+  "checkout_config_id": "config_Ep0eOCwdSfgkco"
+}
+body, err := client.Order.Create(data, nil)
+
+```ruby: Ruby
+require "razorpay"
+Razorpay.setup('YOUR_KEY_ID', 'YOUR_SECRET')
+
+order = Razorpay::Order.create amount: 50000, currency: 'INR', receipt: 'receipt#1', checkout_config_id: 'config_Ep0eOCwdSfgkco'
+
+```java: Java
+RazorpayClient razorpay = new RazorpayClient("[YOUR_KEY_ID]", "[YOUR_KEY_SECRET]");
+
+JSONObject orderRequest = new JSONObject();
+orderRequest.put("amount", 50000); // amount in the smallest currency unit
+orderRequest.put("currency", "INR");
+orderRequest.put("receipt", "receipt#1");
+orderRequest.put("checkout_config_id", "config_Ep0eOCwdSfgkco");
+
+Order order = razorpay.orders.create(orderRequest);
+
+```json: Response
+{
+  "id": "order_EKwxwAgItmmXdp",
+  "entity": "order",
+  "amount": 50000,
+  "amount_paid": 0,
+  "amount_due": 50000,
+  "currency": "INR",
+  "receipt": "receipt#1",
+  "offer_id": null,
+  "status": "created",
+  "attempts": 0,
+  "notes": [],
+  "created_at": 1582628071
+}
+```
+
+Know more about [Orders API](https://razorpay.com/docs/build/llm-docs/api/orders.md).
+
+#### Request Parameters
+
+Descriptions for the request parameters are present in the [Create an Order Request Parameters](https://razorpay.com/docs/build/llm-docs/api/orders/create.md) table.
+
+#### Response Parameters
+
+Descriptions for the response parameters are present in the [Orders Entity](https://razorpay.com/docs/build/llm-docs/api/orders/entity.md) parameters table.
+
+### Related Information
+
+- [Supported Methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md)
+- [Sample Codes](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/sample-code.md)
+---
+title: Sample Codes
+description: Sample codes to help you integrate the payment methods of your choice on Razorpay Checkout.
+---
+
+# Sample Codes
+
+If you want to list all the payment methods offered by `Axis` bank, allow card payments for `ICICI` bank only and hide `upi` payment method from the Checkout, you can do so as follows:
+
+  
+    
+  
+  
+    
+  
+
+```html: Checkout Code
+
+** Own Checkout
+
+  var options = {
+    "key": "[YOUR_KEY_ID]", // Enter the Key ID generated from the Dashboard
+    "amount": "1000",
+    "currency": "INR",
+    "description": "Acme Corp",
+    "image": "example.com/image/rzp.jpg",
+    "prefill":
+    {
+      "email": "gaurav.kumar@example.com",
+      "contact": +919876543210,
+    },
+    config: {
+      display: {
+        blocks: {
+          utib: { //name for Axis block
+            name: "Pay Using Axis Bank",
+            instruments: [
+              {
+                method: "card",
+                issuers: ["UTIB"]
+              },
+              {
+                method: "netbanking",
+                banks: ["UTIB"]
+              },
+            ]
+          },
+          other: { //  name for other block
+            name: "Other Payment Methods",
+            instruments: [
+              {
+                method: "card",
+                issuers: ["ICIC"]
+              },
+              {
+                method: 'netbanking',
+              }
+            ]
+          }
+        },
+        hide: [
+          {
+          method: "upi"
+          }
+        ],
+        sequence: ["block.utib", "block.other"],
+        preferences: {
+          show_default_blocks: false // Should Checkout show its default blocks?
+        }
+      }
+    },
+    "handler": function (response) {
+      alert(response.razorpay_payment_id);
+    },
+    "modal": {
+      "ondismiss": function () {
+        if (confirm("Are you sure, you want to close the form?")) {
+          txt = "You pressed OK!";
+          console.log("Checkout form closed by the user");
+        } else {
+          txt = "You pressed Cancel!";
+          console.log("Complete the Payment")
+        }
+      }
+    }
+  };
+  var rzp1 = new Razorpay(options);
+  document.getElementById('rzp-button1').onclick = function (e) {
+    rzp1.open();
+    e.preventDefault();
+  }
+
+```
+
+**WARN**
+
+**Watch Out!**
+
+You can use the payment methods enabled for your account on the Dashboard. Also, you can raise a request with our [Support Team](https://razorpay.com/support/)    for additional payment methods or providers.
+
+**WARN**
+
+**UPI Collect Flow Deprecated**
+
+According to NPCI guidelines, the UPI Collect flow is being deprecated effective 28 February 2026. Customers can no longer make payments or register UPI mandates by manually entering VPA/UPI id/mobile numbers.
+
+**Exemptions:** UPI Collect will continue to be supported for:
+- MCC 6012 & 6211 (IPO and secondary market transactions).
+- iOS mobile app and mobile web transactions.
+- UPI Mandates (execute/modify/revoke operations only)
+- eRupi vouchers.
+- PACB businesses (cross-border/international payments).
+
+**Action Required:**
+- If you are a new Razorpay user, use [UPI Intent](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/upi/upi-intent.md). 
+- If you are an existing Razorpay user not covered by exemptions, you must migrate to UPI Intent or UPI QR code to continue accepting UPI payments. For detailed migration steps, refer to the [migration documentation](https://razorpay.com/docs/build/llm-docs/announcements/upi-collect-migration/standard-integration.md).
+
+## Show OlaMoney
+
+Use the code given below to show OlaMoney on Checkout:
+
+```js: Ola Money
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'Methods With Offers',
+          instruments: [
+            {
+              method: 'wallet',
+              wallets: ['olamoney']
+            }]
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: true,
+      },
+    },
+  },
+};
+```
+
+  
+    
+  
+  
+    
+  
+
+## Show Most Used Methods
+
+Use the code given below to show the most used methods:
+
+```js: Most Used Methods
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'Most Used Methods',
+          instruments: [
+            {
+              method: 'wallet',
+              wallets: ['payzapp']
+            },
+            {
+                method: 'upi'
+            },
+            ],
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: true,
+      },
+    },
+  },
+};
+```
+
+  
+    
+  
+  
+    
+  
+
+## Show Instruments of a Certain Bank Only
+
+Use the code given below to show the instruments of a certain bank only on Checkout:
+
+```js: Instruments of Axis Bank Only
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'Pay Using Axis Bank',
+          instruments: [
+            {
+              method: 'netbanking',
+              banks: ['UTIB'],
+            },
+            {
+              method: 'card',
+              issuers: ['UTIB'],
+            }
+          ],
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: false,
+      },
+    },
+  },
+};
+```
+
+**WARN**
+
+**Watch Out!**
+
+This configuration is not applicable for [Recurring Payments](https://razorpay.com/docs/build/llm-docs/payments/recurring-payments.md).
+
+  
+    
+  
+  
+    
+  
+
+## Highlight Instruments of a Certain Bank
+
+Use the code given below to highlight the instruments of a certain bank only on Checkout:
+
+```js: Highlight Instruments of Axis Bank
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'Pay Using Axis Bank',
+          instruments: [
+            {
+              method: 'netbanking',
+              banks: ['UTIB'],
+            },
+            {
+              method: 'card',
+              issuers: ['UTIB'],
+            }
+          ],
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: true,
+      },
+    },
+  },
+};
+```
+
+  
+    
+  
+  
+    
+  
+
+## Reorder Payment Methods
+
+Use the code given below to reorder payment methods on Checkout:
+
+```js: Reorder Payment Methods
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'All Payment Options',
+          instruments: [
+            {
+              method: 'upi'
+            },
+            {
+              method: 'card'
+            },
+            {
+                method: 'wallet'
+            },
+            {
+                method: 'netbanking'
+            }
+          ],
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: false,
+      },
+    },
+  },
+};
+```
+
+## Remove a Method from Checkout
+
+Use the code given below to remove a method from Checkout:
+
+```js: EMI Removed from Checkout
+config: {
+    display: {
+      hide: [
+        {
+          method: 'emi'
+        }
+      ],
+      preferences: {
+        show_default_blocks: true,
+      },
+    },
+  },
+};
+```
+
+  
+    
+  
+  
+    
+  
+
+## Show Only a Certain Payment Method on Checkout
+
+Use the code given below to show only a certain payment method on Checkout:
+
+### Card
+
+```js: Land on Card
+config: {
+  display: {
+    blocks: {
+      cards_only: {
+        name: "Pay via Card",
+        instruments: [
+          {
+            method: "card",
+          },
+        ],
+      },
+    },
+    sequence: ["block.cards_only"],
+    preferences: {
+      show_default_blocks: false,
+      },
+    },
+  },
+};
+```
+
+### UPI
+
+```js: Land on UPI
+config: {
+    display: {
+      blocks: {
+        banks: {
+          name: 'Pay via UPI',
+          instruments: [
+            {
+              method: 'upi'
+            }
+          ],
+        },
+      },
+      sequence: ['block.banks'],
+      preferences: {
+        show_default_blocks: false,
+      },
+    },
+  },
+};
+```
+
+### EMI
+
+```js: Land on EMI
+config: {
+  display: {
+    blocks: {
+      banks: {
+        name: "Pay Using HDFC Bank",
+        instruments: [
+          {
+              method: "emi",
+              issuers: ["HDFC"],
+              types: ["debit"],
+              iins: [438628]
+          },
+        ]
+      },
+    },
+    sequence: ["block.banks"],
+    preferences: {
+      show_default_blocks: false 
+    }
+  }
+}
+```
+
+### Related Information
+- [Supported Methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/supported-methods.md)
+- [Configurability of Payment Methods](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods.md)
+---
+title: Supported Methods
+description: List of supported payment methods and instruments.
+---
+
+# Supported Methods
+
+All the supported payment methods and instruments are listed below:
+
+## Supported Banks
+
+**Bank Name** | **Code**
+---
+AU Small Finance Bank | `AUBL`
+---
+Aditya Birla Idea Payments Bank | `ABPB`
+---
+Airtel Payments Bank | `AIRP`
+---
+Allahabad Bank | `ALLA`
+---
+Andhra Bank | `ANDB`
+---
+Andhra Bank Corporate Banking | `ANDB_C`
+---
+Axis Bank | `UTIB` 
+---
+Bandhan Bank | `BDBL` 
+---
+Bank of Bahrain and Kuwait | `BBKM` 
+---
+Bank of Baroda Retail Banking | `BARB_R` 
+---
+Bank of India | `BKID` 
+---
+Bank of Maharashtra | `MAHB` 
+--- 
+Bassein Catholic Co-operative Bank | `BACB` 
+---
+Canara Bank | `CNRB` 
+---
+Catholic Syrian Bank | `CSBK` 
+---
+Central Bank of India | `CBIN` 
+---
+City Union Bank | `CIUB` 
+---
+Corporation Bank | `CORP` 
+---
+Cosmos Co-operative Bank | `COSB` 
+---
+DCB Bank | `DCBL` 
+---
+Dena Bank | `BKDN` 
+---
+Deutsche Bank | `DEUT` 
+---
+Development Bank of Singapore | `DBSS` 
+---
+Dhanlaxmi Bank | `DLXB` 
+---
+Dhanlaxmi Bank Corporate Banking | `DLXB_C` 
+---
+ESAF Small Finance Bank | `ESAF`
+---
+Equitas Small Finance Bank | `ESFB` 
+---
+Federal Bank | `FDRL` 
+---
+HDFC Bank | `HDFC` 
+---
+ICICI Bank | `ICIC` 
+---
+IDBI | `IBKL` 
+---
+IDBI Corporate Banking | `IBKL_C` 
+---
+IDFC FIRST Bank | `IDFB` 
+---
+Indian Bank | `IDIB` 
+---
+Indian Overseas Bank | `IOBA` 
+---
+Indusind Bank | `INDB` 
+---
+Jammu and Kashmir Bank | `JAKA`
+---
+Janata Sahakari Bank (Pune) | `JSBP` 
+---
+Kalupur Commercial Co-operative Bank | `KCCB` 
+---
+Kalyan Janata Sahakari Bank | `KJSB` 
+---
+Karnataka Bank | `KARB` 
+---
+Karur Vysya Bank | `KVBL` 
+---
+Kotak Mahindra Bank | `KKBK` 
+---
+Lakshmi Vilas Bank Corporate Banking | `LAVB_C` 
+---
+Lakshmi Vilas Bank Retail Banking | `LAVB_R` 
+---
+Mehsana Urban Co-operative Bank | `MSNU` 
+---
+NKGSB Co-operative Bank | `NKGS` 
+---
+North East Small Finance Bank | `NESF` 
+---
+PNB (Erstwhile-Oriental Bank of Commerce) | `ORBC` 
+---
+PNB (Erstwhile-United Bank of India) | `UTBI` 
+---
+Punjab & Sind Bank | `PSIB` 
+---
+Punjab National Bank Retail Banking | `PUNB_R` 
+---
+RBL Bank | `RATN` 
+---
+RBL Bank Corporate Banking | `RATN_C` 
+---
+Saraswat Co-operative Bank | `SRCB` 
+---
+Shamrao Vithal Bank Corporate Banking | `SVCB_C` 
+---
+Shamrao Vithal Co-operative Bank | `SVCB` 
+---
+South Indian Bank | `SIBL` 
+---
+Standard Chartered Bank | `SCBL` 
+---
+State Bank of Bikaner and Jaipur | `SBBJ` 
+---
+State Bank of Hyderabad | `SBHY` 
+---
+State Bank of India | `SBIN`
+---
+State Bank of Mysore | `SBMY`
+---
+State Bank of Patiala | `STBP` 
+---
+State Bank of Travancore | `SBTR`
+---
+Suryoday Small Finance Bank | `SURY` 
+---
+Syndicate Bank | `SYNB` 
+---
+Tamilnadu Mercantile Bank | `TMBL` 
+---
+Tamilnadu State Apex Co-operative Bank | `TNSC` 
+---
+Thane Bharat Sahakari Bank | `TBSB` 
+---
+Thane Janata Sahakari Bank | `TJSB` 
+---
+UCO Bank | `UCBA`
+---
+Union Bank of India | `UBIN` 
+---
+Varachha Co-operative Bank | `VARA`
+---
+Vijaya Bank | `VIJB` 
+---
+Yes Bank | `YESB`
+--- 
+Yes Bank Corporate Banking | `YESB_C`
+---
+Zoroastrian Co-operative Bank | `ZCBL` 
+
+## Supported Cards
+
+Any card issued by the following banks:
+
+**Bank Name** | **Code**
+---
+AU Small Finance Bank | `AUBL`
+---
+Aditya Birla Idea Payments Bank | `ABPB`
+---
+Airtel Payments Bank | `AIRP` 
+---
+Allahabad Bank | `ALLA` 
+---
+Andhra Bank | `ANDB` 
+---
+Andhra Bank Corporate Banking | `ANDB_C` 
+---
+Axis Bank | `UTIB` 
+---
+Bandhan Bank | `BDBL` 
+---
+Bank of Bahrein and Kuwait | `BBKM` 
+---
+Bank of Baroda Retail Banking | `BARB_R` 
+---
+Bank of India | `BKID` 
+---
+Bank of Maharashtra | `MAHB` 
+--- 
+Bassein Catholic Co-operative Bank | `BACB` 
+---
+Canara Bank | `CNRB` 
+---
+Catholic Syrian Bank | `CSBK` 
+---
+Central Bank of India | `CBIN` 
+---
+City Union Bank | `CIUB` 
+---
+Corporation Bank | `CORP` 
+---
+Cosmos Co-operative Bank | `COSB` 
+---
+DCB Bank | `DCBL` 
+---
+Dena Bank | `BKDN` 
+---
+Deutsche Bank | `DEUT` 
+---
+Development Bank of Singapore | `DBSS` 
+---
+Dhanlaxmi Bank | `DLXB` 
+---
+Dhanlaxmi Bank Corporate Banking | `DLXB_C` 
+---
+ESAF Small Finance Bank | `ESAF`
+---
+Equitas Small Finance Bank | `ESFB` 
+---
+Federal Bank | `FDRL` 
+---
+HDFC Bank | `HDFC` 
+---
+ICICI Bank | `ICIC` 
+---
+IDBI | `IBKL` 
+---
+IDBI Corporate Banking | `IBKL_C` 
+---
+IDFC FIRST Bank | `IDFB` 
+---
+Indian Bank | `IDIB` 
+---
+Indian Overseas Bank | `IOBA` 
+---
+Indusind Bank | `INDB` 
+---
+Jammu and Kashmir Bank | `JAKA`
+---
+Janata Sahakari Bank (Pune) | `JSBP` 
+---
+Kalupur Commercial Co-operative Bank | `KCCB` 
+---
+Kalyan Janata Sahakari Bank | `KJSB` 
+---
+Karnataka Bank | `KARB` 
+---
+Karur Vysya Bank | `KVBL` 
+---
+Kotak Mahindra Bank | `KKBK` 
+---
+Lakshmi Vilas Bank Corporate Banking | `LAVB_C` 
+---
+Lakshmi Vilas Bank Retail Banking | `LAVB_R` 
+---
+Mehsana Urban Co-operative Bank | `MSNU` 
+---
+NKGSB Co-operative Bank | `NKGS` 
+---
+North East Small Finance Bank | `NESF` 
+---
+PNB (Erstwhile-Oriental Bank of Commerce) | `ORBC` 
+---
+PNB (Erstwhile-United Bank of India) | `UTBI` 
+---
+Punjab & Sind Bank | `PSIB` 
+---
+Punjab National Bank Retail Banking | `PUNB_R` 
+---
+RBL Bank | `RATN` 
+---
+RBL Bank Corporate Banking | `RATN_C` 
+---
+Saraswat Co-operative Bank | `SRCB` 
+---
+Shamrao Vithal Bank Corporate Banking | `SVCB_C` 
+---
+Shamrao Vithal Co-operative Bank | `SVCB` 
+---
+South Indian Bank | `SIBL` 
+---
+Standard Chartered Bank | `SCBL` 
+---
+State Bank of Bikaner and Jaipur | `SBBJ` 
+---
+State Bank of Hyderabad | `SBHY` 
+---
+State Bank of India | `SBIN`
+---
+State Bank of Mysore | `SBMY`
+---
+State Bank of Patiala | `STBP` 
+---
+State Bank of Travancore | `SBTR`
+---
+Suryoday Small Finance Bank | `SURY` 
+---
+Syndicate Bank | `SYNB` 
+---
+Tamilnadu Mercantile Bank | `TMBL` 
+---
+Tamilnadu State Apex Co-operative Bank | `TNSC` 
+---
+Thane Bharat Sahakari Bank | `TBSB` 
+---
+Thane Janata Sahakari Bank | `TJSB` 
+---
+UCO Bank | `UCBA`
+---
+Union Bank of India | `UBIN` 
+---
+Varachha Co-operative Bank | `VARA`
+---
+Vijaya Bank | `VIJB` 
+---
+Yes Bank | `YESB`
+--- 
+Yes Bank Corporate Banking | `YESB_C`
+---
+Zoroastrian Co-operative Bank | `ZCBL` 
+
+### Supported Card Types
+
+- `credit` for credit cards
+- `debit` for debit cards
+
+### Supported Card Networks
+
+**Card Network Name** | **Code**
+---
+American Express | `American Express`
+---
+Diners Club (Only available for private limited and registered businesses) | `Diners Club`
+---
+Maestro | `Maestro`
+---
+MasterCard | `MasterCard`
+---
+RuPay | `RuPay`
+---
+Visa | `Visa`
+---
+Bajaj Finserv | `Bajaj Finserv`
+---
+
+## Supported Debit Card EMI Providers
+
+Bank Code | Issuer Bank 
+---
+HDFC | HDFC Bank
+
+**INFO**
+
+**Handy Tips**
+
+Know the standard debit card interest rates charged by the [banks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#5-can-you-provide-a-list-of-the).
+
+## Supported Credit Card EMI Providers
+
+Bank Code | Issuer Bank 
+---
+AMEX | American Express 
+---
+BARB | Bank of Baroda 
+---
+CITI | Citibank 
+---
+FDRL | Federal Bank 
+---
+HDFC | HDFC Bank 
+---
+HSBC | HSBC Bank 
+---
+ICIC | ICICI Bank 
+---
+INDB | IndusInd Bank 
+---
+KKBK | Kotak Mahindra Bank 
+---
+RATN | RBL Bank 
+---
+SBIN | State Bank of India 
+---
+SCBL | Standard Chartered 
+---
+UTIB | Axis Bank 
+---
+YESB | Yes Bank 
+
+### Other Cards
+
+Code | Card Network Name
+---
+Onecard  | Onecard  
+
+**INFO**
+
+**Handy Tips**
+
+Know the standard credit card interest rates charged by the [banks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#1-what-are-the-standard-credit-card-interest).
+
+## Supported Cardless EMI Providers
+
+Banks | Provider Code 
+---
+ICICI Bank | `icic` 
+---
+IDFC Bank | `idfb` 
+---
+HDFC Bank | `hdfc` 
+---
+Kotak Bank| `kkbk` 
+---
+axio | `walnut369` 
+---
+Fibe | `earlysalary` 
+---
+ZestMoney | `zestmoney` 
+
+**INFO**
+
+**Handy Tips**
+
+Know the standard interest rates charged by:
+- [Banks/Partners](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#1-what-are-the-standard-interest-rates-charged)
+- [Pay Later Providers](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#2-what-are-the-standard-interest-rates-charged)
+
+## Supported Wallets
+
+**Wallet provider** | **Wallet Code**
+---
+PhonePe | `phonepe`
+---
+Mobikwik | `mobikwik`
+---
+PayZapp | `payzapp`
+---
+Ola Money | `olamoney`
+---
+Airtel Money | `airtelmoney`
+---
+Amazon Pay | `amazonpay`
+---
+JioMoney | `jiomoney`
+---
+PayPal | `paypal`
+
+## Supported UPI Apps
+
+App Name | Package Name
+---
+Google Pay | `com.google.android.apps.nbu.paisa.user`
+---
+BHIM | `in.org.npci.upiapp`
+---
+BHIM UCO | `com.lcode.ucoupi`
+---
+BHIM IOB | `com.euronet.iobupi`
+---
+BHIM CSB | `com.lcode.csbupi`
+---
+PhonePe | `com.phonepe.app`
+---
+Paytm | `net.one97.paytm`
+---
+ICICI iMobile | `com.csam.icici.bank.imobile`
+---
+ICICI Pocket | `com.icicibank.pockets`
+---
+SBI | `com.sbi.upi`
+---
+Axis Pay | `com.upi.axispay`
+---
+Axis | `com.axis.mobile`
+---
+Samsung Pay | `com.samsung.android.spay`
+---
+HDFC Bank | `com.snapwork.hdfc`
+---
+PayZapp | `com.hdfcbank.payzapp`
+---
+Bank of Baroda | `com.bankofbaroda.upi`
+---
+Freecharge | `com.freecharge.android`
+---
+KVB | `com.mycompany.kvb`
+---
+JK UPI | `com.fss.jnkpsp`
+---
+IDFC | `com.fss.idfcpsp`
+---
+IDFC First | `com.idfcfirstbank.optimus`
+---
+Yes Bank | `com.YesBank`
+---
+YesBank Iris | `in.irisbyyes.app`
+---
+Microsoft Kaizala | `com.microsoft.mobile.polymer`
+---
+Lotza | `com.upi.federalbank.org.lotza`
+---
+Fed Mobile | `com.fedmobile`
+---
+IndusInd Pay | `com.mgs.induspsp`
+---
+IndusInd Mobile | `com.fss.indus`
+---
+Indus Indie | `com.indusind.indie`
+---
+Wizely | `ai.wizely.android`
+---
+Amazon | `in.amazon.mShop.android.shopping`
+---
+RBL MoBank | `com.rblbank.mobank`
+---
+CRED | `com.dreamplug.androidapp`
+---
+Finserve | `in.bajajfinservmarkets.app`
+---
+Fampay | `com.fampay.in`
+---
+Mobikwik | `com.mobikwik_new`
+---
+PNB Bank | `com.mgs.pnbupi`
+---
+PNB One | `com.Version1`
+---
+Digibank | `com.dbs.in.digitalbank`
+---
+Jupiter | `money.jupiter`
+---
+Navi | `com.naviapp`
+---
+Slice | `indwin.c3.shareapp`
+---
+Tata Neu | `com.tatadigital.tcp`
+---
+Groww | `com.nextbillion.groww`
+---
+Shriram One | `com.shriram.one`
+---
+Fave | `com.pinelabs.fave`
+---
+Ultracash | `com.ultracash.payment.customer`
+---
+Timepay | `com.npst.timepay.society`
+---
+Goibibo | `com.goibibo`
+---
+Kotak | `com.msf.kbank.mobile`
+---
+Kotak811 | `com.kotak811mobilebankingapp.instantsavingsupiscanandpayrecharge`
+---
+DakPay | `com.fss.ippbpsp`
+---
+India Post | `com.iexceed.appzillon.ippbMB`
+---
+Canara | `com.canarabank.mobility`
+---
+MyJio | `com.jio.myjio`
+---
+IndOASIS | `com.IndianBank.IndOASIS`
+---
+Tvam | `com.atyati.tvamapp`
+---
+PopClub | `com.popclub.android`
+---
+Vyom | `com.infrasoft.uboi`
+---
+Super Money | `money.super.payments`
+---
+Omnicard | `com.eroute.omnicard`
+---
+AU0101 | `com.ausmallfinancebank.amb`
+---
+Cent Mobile | `com.infrasofttech.CentralBank`
+---
+Kiwi | `in.gokiwi.kiwitpap`
+---
+Digi Khata | `com.paypointz.wallet`
+---
+Moneyview | `com.whizdm.moneyview.loans`
+
+### Supported UPI flows
+
+Given below are the supported UPI flows: 
+
+- `collect` for flow via VPA
+- `intent` for flow via UPI apps
+    
+**INFO**
+
+**Handy Tips**
+
+The supported UPI apps for intent on android mobile web are **Google Pay** and **PhonePe**.
+
+- `qr` for flow via UPI QR
+
+## Supported Pay Later Providers
+
+**Provider name** | **Provider Code**
+---
+LazyPay | `lazypay`
+---
+PayPal | `paypal`
+
+**INFO**
+
+**Handy Tips**
+
+- PayPal now supports the Pay Later feature. You should enable both [PayPal](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/wallets/paypal.md#to-enable-paypal) and the Pay Later options under Account & Settings → Pay Later (under Payment methods) on the Dashboard to enable the Pay Later feature.
+
+## Supported Apps
+
+**App** | **Code**
+---
+CRED Pay | `cred`
+
+## Supported Debit Card EMI Providers
+
+Bank Code | Issuer Bank 
+---
+HDFC | HDFC Bank
+
+**INFO**
+
+**Handy Tips**
+
+Know the standard debit card interest rates charged by the [banks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#5-can-you-provide-a-list-of-the).
+
+## Supported Credit Card EMI Providers
+
+Bank Code | Issuer Bank 
+---
+AMEX | American Express 
+---
+BARB | Bank of Baroda 
+---
+CITI | Citibank 
+---
+FDRL | Federal Bank 
+---
+HDFC | HDFC Bank 
+---
+HSBC | HSBC Bank 
+---
+ICIC | ICICI Bank 
+---
+INDB | IndusInd Bank 
+---
+KKBK | Kotak Mahindra Bank 
+---
+RATN | RBL Bank 
+---
+SBIN | State Bank of India 
+---
+SCBL | Standard Chartered 
+---
+UTIB | Axis Bank 
+---
+YESB | Yes Bank 
+
+### Other Cards
+
+Code | Card Network Name
+---
+Onecard  | Onecard  
+
+**INFO**
+
+**Handy Tips**
+
+Know the standard credit card interest rates charged by the [banks](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/emi/faqs.md#1-what-are-the-standard-credit-card-interest).
+
+## Supported Wallets
+
+**Wallet provider** | **Wallet Code**
+---
+PhonePe | `phonepe`
+---
+Mobikwik | `mobikwik`
+---
+PayZapp | `payzapp`
+---
+Ola Money | `olamoney`
+---
+Airtel Money | `airtelmoney`
+---
+Amazon Pay | `amazonpay`
+---
+JioMoney | `jiomoney`
+---
+PayPal | `paypal`
+
+## Supported UPI Apps
+
+App Name | Package Name
+---
+Google Pay | `com.google.android.apps.nbu.paisa.user`
+---
+BHIM | `in.org.npci.upiapp`
+---
+BHIM UCO | `com.lcode.ucoupi`
+---
+BHIM IOB | `com.euronet.iobupi`
+---
+BHIM CSB | `com.lcode.csbupi`
+---
+PhonePe | `com.phonepe.app`
+---
+Paytm | `net.one97.paytm`
+---
+ICICI iMobile | `com.csam.icici.bank.imobile`
+---
+ICICI Pocket | `com.icicibank.pockets`
+---
+SBI | `com.sbi.upi`
+---
+Axis Pay | `com.upi.axispay`
+---
+Axis | `com.axis.mobile`
+---
+Samsung Pay | `com.samsung.android.spay`
+---
+HDFC Bank | `com.snapwork.hdfc`
+---
+PayZapp | `com.hdfcbank.payzapp`
+---
+Bank of Baroda | `com.bankofbaroda.upi`
+---
+Freecharge | `com.freecharge.android`
+---
+KVB | `com.mycompany.kvb`
+---
+JK UPI | `com.fss.jnkpsp`
+---
+IDFC | `com.fss.idfcpsp`
+---
+IDFC First | `com.idfcfirstbank.optimus`
+---
+Yes Bank | `com.YesBank`
+---
+YesBank Iris | `in.irisbyyes.app`
+---
+Microsoft Kaizala | `com.microsoft.mobile.polymer`
+---
+Lotza | `com.upi.federalbank.org.lotza`
+---
+Fed Mobile | `com.fedmobile`
+---
+IndusInd Pay | `com.mgs.induspsp`
+---
+IndusInd Mobile | `com.fss.indus`
+---
+Indus Indie | `com.indusind.indie`
+---
+Wizely | `ai.wizely.android`
+---
+Amazon | `in.amazon.mShop.android.shopping`
+---
+RBL MoBank | `com.rblbank.mobank`
+---
+CRED | `com.dreamplug.androidapp`
+---
+Finserve | `in.bajajfinservmarkets.app`
+---
+Fampay | `com.fampay.in`
+---
+Mobikwik | `com.mobikwik_new`
+---
+PNB Bank | `com.mgs.pnbupi`
+---
+PNB One | `com.Version1`
+---
+Digibank | `com.dbs.in.digitalbank`
+---
+Jupiter | `money.jupiter`
+---
+Navi | `com.naviapp`
+---
+Slice | `indwin.c3.shareapp`
+---
+Tata Neu | `com.tatadigital.tcp`
+---
+Groww | `com.nextbillion.groww`
+---
+Shriram One | `com.shriram.one`
+---
+Fave | `com.pinelabs.fave`
+---
+Ultracash | `com.ultracash.payment.customer`
+---
+Timepay | `com.npst.timepay.society`
+---
+Goibibo | `com.goibibo`
+---
+Kotak | `com.msf.kbank.mobile`
+---
+Kotak811 | `com.kotak811mobilebankingapp.instantsavingsupiscanandpayrecharge`
+---
+DakPay | `com.fss.ippbpsp`
+---
+India Post | `com.iexceed.appzillon.ippbMB`
+---
+Canara | `com.canarabank.mobility`
+---
+MyJio | `com.jio.myjio`
+---
+IndOASIS | `com.IndianBank.IndOASIS`
+---
+Tvam | `com.atyati.tvamapp`
+---
+PopClub | `com.popclub.android`
+---
+Vyom | `com.infrasoft.uboi`
+---
+Super Money | `money.super.payments`
+---
+Omnicard | `com.eroute.omnicard`
+---
+AU0101 | `com.ausmallfinancebank.amb`
+---
+Cent Mobile | `com.infrasofttech.CentralBank`
+---
+Kiwi | `in.gokiwi.kiwitpap`
+---
+Digi Khata | `com.paypointz.wallet`
+---
+Moneyview | `com.whizdm.moneyview.loans`
+
+### Supported UPI flows
+
+Given below are the supported UPI flows: 
+
+- `collect` for flow via VPA
+- `intent` for flow via UPI apps
+    
+**INFO**
+
+**Handy Tips**
+
+The supported UPI apps for intent on android mobile web are **Google Pay** and **PhonePe**.
+
+- `qr` for flow via UPI QR
+
+## Supported Pay Later Providers
+
+**Provider name** | **Provider Code**
+---
+LazyPay | `lazypay`
+---
+PayPal | `paypal`
+
+**INFO**
+
+**Handy Tips**
+
+- PayPal now supports the Pay Later feature. You should enable both [PayPal](https://razorpay.com/docs/build/llm-docs/payments/payment-methods/wallets/paypal.md#to-enable-paypal) and the Pay Later options under Account & Settings → Pay Later (under Payment methods) on the Dashboard to enable the Pay Later feature.
+
+### Related Information 
+- [Understand the Configuration](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/understand-configuration.md)
+- [Sample Codes](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/configure-payment-methods/sample-code.md)
+---
+title: Best Practices for Standard Checkout Integration
+description: Best practices for a smoother Standard Checkout web integration and payment experience.
+---
+
+# Best Practices for Standard Checkout Integration
+
+Follow the best practices for a smooth Standard Checkout web integration.
+
+1. **Capture Payment Using Payment Capture Settings**
+
+    You **must capture** the authorised payments for the **settlement of the payments** in your bank account. Use the [Payment Capture Setting](https://razorpay.com/docs/build/llm-docs/payments/payments/capture-settings.md) to configure the capture settings at an account level via the Dashboard.
+
+2. **Integrate Orders API**
+
+    Orders bind multiple payment attempts for a single order. This helps to **prevent multiple payments**. [Integrate with Orders API](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/integration-steps.md#11-create-an-order-in-server) on your server-side and pass the `order_id` to Checkout.
+
+3. **Verify Signature to Avoid Data Tampering**
+
+    This is a mandatory step to confirm the authenticity of the details returned to the Checkout form for successful payments. Know how to [verify payment signature](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/web-integration/standard/integration-steps.md#15-verify-payment-signature).
+
+4. **Check Payment/Order Status before Providing Services**
+
+    Check the payment/order status, that is if the payment's status is `captured` and the order's status is `paid` before proving the services to the customers.
+
+    - [Fetch All Payments for an Order API](https://razorpay.com/docs/build/llm-docs/api/orders/fetch-payments.md)
+    - [Fetch Status of a Payment using Payment id API](https://razorpay.com/docs/build/llm-docs/api/payments/fetch-with-id.md)
+    - [Fetch Status of an Order using Order id API](https://razorpay.com/docs/build/llm-docs/api/orders/fetch-with-id.md)
+
+5. **Implement Webhooks**
+
+    Implement webhooks or the query API to avoid callback failure (drop-offs could be due to connectivity or network failure) and to verify the payment details via an S2S call. Know more about [Webhooks](https://razorpay.com/docs/build/llm-docs/webhooks/setup-edit-payments.md). You should enable the following webhooks:
+
+    - `payment.captured`
+    - `payment.failed`
+    - `order.paid`
+
+6. **Implement Callback URL**
+
+    Sites like Instagram, Facebook Messenger, Opera and UC browser do not support i-frame. You should implement [callback URL](https://razorpay.com/docs/build/llm-docs/payments/payment-gateway/callback-url.md) if your customers use any of these for making payments.

@@ -1,0 +1,1821 @@
+You can fork the PhonePe Postman Public Workspace to explore and try out the Standard Checkout APIs.
+
+Run in Postman ->
+User Journey
+The following user journey illustrates the complete payment lifecycle to help you understand the integration flow clearly.
+
+
+
+Prerequisites
+Before you start the integration process, ensure you have:
+
+Access to PhonePe PG’s UAT (User Acceptance Testing) and Production environments.
+API credentials, including the Client ID, Client Version and Client Secret.
+A basic understanding of HTTP methods (GET, POST) and JSON.
+A testing environment to simulate payment flows.
+Environments
+Use the environment URLs below to integrate and test your API calls. The Sandbox environment is intended for testing and validation, while the Production environment should be used once your integration is live. Make sure to switch the base URL based on the environment you are working in.
+
+Environment	API
+Sandbox	https://api-preprod.phonepe.com/apis/pg-sandbox/<Endpoint>
+Production	Authorization API: https://api.phonepe.com/apis/identity-manager/<Endpoint>
+Other APIs: https://api.phonepe.com/apis/pg/<Endpoint>
+📘 Test Before Production!
+
+To ensure a smooth integration, please integrate with the Test environment first and then move to production.
+
+API Endpoints
+Endpoint Details:
+API	Method	Endpoint
+Authorization	POST	/v1/oauth/token
+Create Payment	POST	/checkout/v2/pay
+Order Status API	GET	/checkout/v2/order/{merchantOrderId}/status
+Refund	POST	/payments/v2/refund
+Refund Status API	GET	/payments/v2/refund/{merchantRefundId}/status
+Checkout Page
+The checkout pages are optimized for both desktop and mobile views. Users can complete payments using UPI ID, NetBanking, or Cards on either view, while QR-based payments are available only on the desktop view. Below is a preview of the checkout experience on both desktop and mobile.
+
+Desktop View
+
+
+
+Mobile View
+
+
+
+What’s Next?
+Now that you’re familiar with the environment setup and APIs, you can start the integration process. The next section will walk you through the Integration Steps to help you build the checkout experience seamlessly into your website.Website Integration
+
+To process a payment using PhonePe’s Standard Checkout, the integration follows a structured sequence of steps that ensures security, reliability, and a smooth customer experience.
+
+
+
+1. Generate Authorization Token
+Authentication is the first step in PhonePe Payment Gateway’s standard checkout API integration. It involves generating an authorization token to make further API calls. 
+
+Creating an authorization token to make API calls means generating a unique key or password that proves your system has permission to interact with PhonePe Payment Gateway. This token identifies and authenticates your website when it requests services like processing payments, checking status, etc.
+
+For complete details, refer to the Generate Authorization API Reference.
+
+2. Create Payment Request
+This includes providing key information such as the transaction amount, a unique order ID, and the redirection URL where the customer will be taken after the payment is completed (whether it is a success or failure). 
+
+Important:
+You can pass the expireAfter parameter in the request payload to customise the expiry of the PhonePe Standard Checkout Page
+You can pass the user-defined fields(UDFs) in the metaInfo block to receive the same details in the Status or Webhook response
+You can pass the selected instrument details in the paymentModeConfig block to display/hide the selected instruments as per your needs
+For complete details, refer to the Create Payment API Reference.
+
+3. Invoke iframe PayPage
+In this step, you’ll integrate and invoke the PayPage on the checkout page of your website. The PayPage acts as the interface where customers complete their payment process.
+
+For complete details, refer to the PayPage.
+
+4. Verify Payment Response
+Once a payment is initiated, it’s important to confirm whether it was successful, failed, or still pending. This helps your system take the right next steps, like confirming an order or retrying a payment. There are two ways to verify the payment response:
+
+Webhook (Server-to-Server Callback) – Recommended
+This is an automated notification sent by PhonePe Payment Gateway directly to your server when the status of the payment changes (e.g., success or failure). It ensures real-time updates. 
+Webhook Event Types
+checkout.order.completed 
+checkout.order.failed 
+pg.refund.completed 
+pg.refund.failed
+Check Status API :
+If you don’t receive the webhook callback, you can use the APIs to manually check the payment status using Order Status.
+Important:
+Use the “payload.state” Parameter: For payment status, rely only on the root-level “payload.state” field in the response
+Avoid Strict Deserialization: Don’t use overly strict rules for processing the response
+Use the “event” Parameter: Use the “event” parameter instead to identify the event type
+Time Format: The expireAt and timestamp fields will be in epoch time
+What’s Next?
+You’ve now understood the key steps involved in integrating PhonePe Payment Gateway into your website. It’s time to begin the actual integration process by generating an authorization token.
+
+Head over to the next section to learn how to securely authenticate your API requests using our Authorization API.
+Generate Authorization Token
+This API generates an Authorization Token required to authenticate all standard checkout API requests.
+
+The token must be obtained before initiating any checkout-related operations such as creating a payment request, checking payment status, or processing refunds. It should be included in the Authorization header for all subsequent API calls.
+
+Environment
+Environment	HTTP Method	API
+Sandbox	POST	https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token
+Production	POST	https://api.phonepe.com/apis/identity-manager/v1/oauth/token
+Request
+Request Header
+Header Name	Header Value
+Content-Type	application/x-www-form-urlencoded
+Request Parameters
+Parameter Name	Parameter Value
+client_id	Client ID shared by PhonePe PG
+client_version	Client Version shared by PhonePe PG
+client_secret	Client secret shared by PhonePe PG
+grant_type	Set the value to “client_credentials“
+Sample Request
+
+curl --location 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=CLIENT_ID' \
+--data-urlencode 'client_version=CLIENT_VERSION' \
+--data-urlencode 'client_secret=CLIENT_SECRET' \
+--data-urlencode 'grant_type=client_credentials'
+Response
+Sample Response
+
+{
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzT24iOjE3MjA2MzUzMjE5OTYsIm1lcmNoYW50SWQiOiJWUlVBVCJ9.4YjYHI6Gy6gzOisD_628wfbaI46dMSc5T_0gZ2-SAJo",
+    "encrypted_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzT24iOjE3MjA2MzUzMjE5OTYsIm1lcmNoYW50SWQiOiJWUlVBVCJ9.4YjYHI6Gy6gzOisD_628wfbaI46dMSc5T_0gZ2-SAJo",
+    "expires_in": null,
+    "issued_at": 1706073005,
+    "expires_at": 1706697605,
+    "session_expires_at": 1706697605,
+    "token_type": "O-Bearer"
+}
+Response Parameters
+Parameter Name	Data Type	Description
+access_token	String	The token generated by PhonePe. This token is valid for a specific time, which can be determined using the expires_at field. Once expired, the token must be refreshed using the same API.
+issued_at	DateTime	The timestamp in epoch (in seconds) when the token was generated
+expires_at	DateTime	Token expiry timestamp in epoch
+token_type	String	The type of token, which will be O-Bearer.
+ℹ️ Access Token Guidelines!
+
+You should depend on the following key response parameters:
+access_token: This is the token that must be included in API calls with PhonePe for authentication.
+expires_at: This indicates the token’s validity (in seconds). You must ensure that the token is refreshed before it expires. If it expires, you will have to send the request again.
+The auth_token is required for all subsequent API calls. Use the above access token to initiate the payment process.
+Run a Sample Token Request!
+📘 Accessing Your Credentials
+
+You can view your Client ID and Client Secret from the PhonePe Business Dashboard. Navigate to Developer Settings to find your API keys and use them to try out the sample code.
+
+body params
+Client Id
+string
+required
+Enter your client Id
+Client Secret
+string
+required
+Enter your client Secret
+node
+node
+shell
+javascript
+python
+axios
+axios
+api
+node-fetch
+http
+request
+1234567891011121314151617181920
+Copy Code
+Run
+API Response
+1
+You can also test this API request directly in Postman for a quick and easy integration check.
+nitiate Payment
+This API is used to initiate a Payment Gateway Checkout session by providing transaction details such as the amount, order ID, and redirect URLs.
+
+Once the request is successfully created, a checkout session is generated where the customer is redirected to complete the payment.
+
+API Endpoints
+Environment	HTTP Method	API
+Sandbox	POST	https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/pay
+Production	POST	https://api.phonepe.com/apis/pg/checkout/v2/pay
+You can also test this API request directly in Postman for a quick and easy integration check.
+
+Run in Postman ->
+Request
+Request Headers
+Header Name	Header Value
+Content-Type	application/json
+Authorization	O-Bearer <merchant-auth-token>
+Request
+Sample Request
+
+{
+  "merchantOrderId": "TX123653456743456",
+  "amount": 1000,
+  "expireAfter": 1200,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "message": "Payment message used for collect requests",
+    "merchantUrls": {
+      "redirectUrl": ""
+    }
+  },
+  "disablePaymentRetry": true,
+  "metaInfo": {
+    "udf1": "additional-information-1",
+    "udf2": "additional-information-2",
+    "udf3": "additional-information-3",
+    "udf4": "additional-information-4",
+    "udf5": "additional-information-5",
+    "udf6": "additional-information-6",
+    "udf7": "additional-information-7",
+    "udf8": "additional-information-8",
+    "udf9": "additional-information-9",
+    "udf10": "additional-information-10",
+    "udf11": "additional-information-11",
+    "udf12": "additional-information-12",
+    "udf13": "additional-information-13",
+    "udf14": "additional-information-14",
+    "udf15": "additional-information-15"
+  }
+}
+Prefill user’s Phone Number
+This feature allows you to streamline the login process by pre-populating a user’s mobile number during the Standard Checkout flow.
+
+If you already have a user’s phone number stored in your system, you can pass it directly within the checkout request. For new or non-logged-in users, this number will automatically appear in the login field, reducing friction and helping them complete their purchase faster.
+
+
+
+
+
+
+
+Sample request with prefilled number
+
+{
+  "merchantOrderId": "TX123653456743456",
+  "amount": 1000,
+  "expireAfter": 1200,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "message": "Payment message used for collect requests",
+    "merchantUrls": {
+      "redirectUrl": ""
+    }
+  },
+  "prefillUserLoginDetails": {
+    "phoneNumber": "+91 998*****09" //the ph-no can be written like this as well: 998*****09, +91998*****09 
+  },
+  "disablePaymentRetry": true,
+  "metaInfo": {
+    "udf1": "additional-information-1",
+    "udf2": "additional-information-2",
+    "udf3": "additional-information-3",
+    "udf4": "additional-information-4",
+    "udf5": "additional-information-5",
+    "udf6": "additional-information-6",
+    "udf7": "additional-information-7",
+    "udf8": "additional-information-8",
+    "udf9": "additional-information-9",
+    "udf10": "additional-information-10",
+    "udf11": "additional-information-11",
+    "udf12": "additional-information-12",
+    "udf13": "additional-information-13",
+    "udf14": "additional-information-14",
+    "udf15": "additional-information-15"
+  }
+}
+Request Parameters
+Parameter Name	Data Type	Description	Mandatory (Yes/No)	Constraints
+merchantOrderId	String	Unique merchant order ID generated by you	Yes	Max Length = 63 characters
+No Special characters are allowed except underscore “_” and hyphen “-“
+amount	Long	The total amount for the order, in paisa (e.g., ₹10 = 1000 paisa)	Yes	Minimum value = 100
+expireAfter	Long	The time (in seconds) after which the order will expire. If not provided, the default value will be used	No	
+Minimum value = 300, maximum value = 3600 (in seconds)
+metaInfo	Object	Merchant defined meta info to store additional information.
+same data will be returned in status and callback response.	No	• For udf1 to udf10, there is no constraint and Maximum length for Udf1-10 = 256 characters
+• For udf11 to udf15, alphanumeric values with _-+@. are allowed and Maximum length for Udf11-15 = 50 characters
+• It is mandatory to keep the parameter names udf1, udf2, etc., exactly as they are in the metainfo block. Renaming these key values will result in a production error.
+paymentFlow	Object	Additional details required by this flow	Yes	
+paymentFlow.type	String	Type of payment flow	Yes	Valued allowed=[PG_CHECKOUT]
+paymentFlow.message	String	Payment message used for collect requests	No	
+paymentFlow.merchantUrls	Object	The object for storing different merchant URLs	Yes	
+paymentFlow.merchantUrls.redirectUrl	String	URL where the user will be redirected after a successful/failed payment	Yes	
+prefillUserLoginDetails	String	User phone number for prefilling in login flows	Yes	
+Response
+Case 1: Order created successfully
+
+{
+    "orderId": "OMO123456789",
+    "state": "PENDING",
+    "expireAt": 1703756259307,    
+    "redirectUrl": "https://mercury-uat.phonepe.com/transact/uat_v2?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzT24iOjE3MjgyNTk1MzE0NzgsIm1lcmNoYW50SWQiOiJWUlVBVCIsIm1lcmNoYW50T3JkZXJJZCI6Ik1PLTlkMC1hNmMyYmY1ZWM4MmUifQ.Trj5fub__kJpQhzOlJttXl2UPruHE7fsbH5QWj-iy6E"
+}
+Case 2: Order with same merchant order id is already present and not in CREATED state
+
+{
+    "code": "BAD_REQUEST",
+    "message": "Please check the inputs you have provided."
+}
+Case 3: Internal Server Error
+
+{
+  "code": "INTERNAL_SERVER_ERROR",
+  "message": "There is an error trying to process your transaction at the moment. Please try again in a while."
+}
+Response Parameters
+Field Name	Data Type	Description
+orderId	String	Payment Gateway generated internal order ID.
+state	String	State of the order created, expected value is PENDING.
+expireAt	Long	Order expiry date in epoch.
+redirectUrl	String	URL where you are supposed to redirect the user to complete payment.
+Try a Sample Create Payment Request!
+headers
+Token
+string
+required
+Access Token you recieved
+O-Bearer 
+body params
+merchantOrderId
+string
+required
+Enter your merchantOrderId
+node
+node
+shell
+javascript
+python
+axios
+axios
+api
+node-fetch
+http
+request
+1234567891011121314151617181920
+Copy Code
+Run
+API Response
+1
+Configure Payment Modes
+Payment mode configuration allows you to control which payment methods, instruments, and flows are available to customers during checkout. These preferences are passed directly within the Create Payment API request body, with no need for any dashboard-level configuration. Since the configuration is applied at a transaction level, it provides granular, per-order control over the checkout experience.
+
+Note: This page documents the V2 schema. If your integration was built prior to the introduction of V2 and your requests either omit the version field or specify it as V1, please refer to the V1 documentation. V2 offers enhanced flexibility and finer control, and is recommended for all new integrations.
+
+Request
+paymentModeConfig is nested inside paymentFlow.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 1000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        { "type": "UPI", "flows": ["INTENT"], "apps": ["phonepe", "gpay"] },
+        { "type": "CARD", "types": ["CREDIT_CARD"], "networks": ["VISA", "MASTER_CARD"] },
+        { "type": "NET_BANKING", "banks": ["HDFC", "ICIC", "SBIN"] }
+      ]
+    }
+  }
+}
+Parameter	Data Type	Mandatory	Description
+version	string	Required	Must be "V2" to use the V2 schema. Omitting this field falls back to V1 behavior.
+enabledPaymentModes	Array	Conditional	List of payment mode constraints that define the allowlist. Mutually exclusive with disabledPaymentModes.
+disabledPaymentModes	Array	Conditional	List of payment mode constraints that define the blocklist. Mutually exclusive with enabledPaymentModes.
+Payment Mode Constraint Object
+Each element in enabledPaymentModes or disabledPaymentModes is a constraint object. The type field identifies the payment mode; additional fields are dimension filters specific to that type.
+
+Parameter	Type	Mandatory	Description
+type	String	Required	Accepted values: “UPI”, “CARD”, “NET_BANKING”, “CORPORATE_NET_BANKING”, “EMI”, “WALLET”.
+UPI
+Parameter	Type	Mandatory	Default	Description
+flows	array of strings	Optional	All flows	Flows to allow or block: “INTENT”, “COLLECT”, “QR”.
+apps	array of strings	Optional	All apps	UPI apps to allow or block (lowercase). For example: "phonepe", "gpay", "paytm".
+instruments	array of strings	Optional	All instruments	Instrument types: "BANK_ACCOUNT", "RUPAY_CC", "CREDIT_LINE".
+CARD
+Parameter	Type	Mandatory	Default	Description
+types	array of strings	Optional	All types	Card types: “CREDIT_CARD”, “DEBIT_CARD”.
+networks	array of strings	Optional	All networks	Card networks: “VISA”, “MASTER_CARD”, “RUPAY”, “AMEX”, “DINERS_CLUB”.
+variants	array of strings	Optional	All variants	Card tiers: “CONSUMER”, “PREMIUM”, “SUPER_PREMIUM”, “CORPORATE”.
+geoScopes	array of strings	Optional	All geographies	Issuing geography: “DOMESTIC”, “INTERNATIONAL”.
+NetBanking
+Parameter	Type	Mandatory	Default	Description
+banks	array of strings	Optional	All banks	Bank codes (uppercase). For example: `”HDFC”`, `”ICIC”`, `”SBIN”`. See Supported Banks for the full list.
+Corporate NetBanking
+Parameter	Type	Mandatory	Default	Description
+banks	array of strings	Optional	All banks	Bank codes (uppercase). Uses the same values as NET_BANKING. See Supported Banks for the full list.
+EMI
+Parameter	Type	Mandatory	Default	Description
+types	array of strings	Optional	All types	EMI instrument types: “CREDIT_CARD”.
+Wallet
+Parameter	Type	Mandatory	Default	Description
+wallets	array of strings	Optional	All wallets	Wallet providers: “PHONEPE”.
+See the Payment Mode Reference for per-mode behavioral details and examples.
+
+When to use this Configuration
+Use Case	Example Goal	Recommended Approach
+App-Specific UPI	Show only PhonePe and GPay	enabledPaymentModes with type: "UPI", apps: ["phonepe", "gpay"]
+Domestic Only	Block international cards	enabledPaymentModes with type: "CARD", geoScopes: ["DOMESTIC"]
+Debit-Only Flow	Allow only domestic debit Visa	enabledPaymentModes with type: "CARD", types: ["DEBIT_CARD"], networks: ["VISA"], geoScopes: ["DOMESTIC"]
+Enterprise Payroll	Restrict net banking to specific banks	enabledPaymentModes with type: "NET_BANKING", banks: ["HDFC", "ICIC"]
+Total Suppression	Hide net banking entirely	disabledPaymentModes with type: "NET_BANKING"
+V1 vs V2 Schema Comparison
+V1 and V2 schemas are mutually exclusive. Once you set "version": "V2", all constraints must follow the V2 schema. V1 type values (like UPI_INTENT or UPI_QR) are completely ignored in V2.
+
+Feature	V1 Schema	V2 Schema
+Trigger	Omit version field	Set "version": "V2" in paymentModeConfig
+Granularity	Coarse-grained (method-level)	Fine-grained (instrument, network, app, variant, geography)
+UPI Setup	Separate types: UPI_INTENT, UPI_QR, UPI_COLLECT	Single type: "UPI" filtered by flows, apps, instruments
+Card Setup	type: "CARD" with cardTypes (basic)	type: "CARD" filtered by types, networks, variants, geoScopes
+NetBanking	type: "NET_BANKING" (no bank-level control)	type: "NET_BANKING" filtered via banks list
+How it works
+enabledPaymentModes vs disabledPaymentModes
+
+enabledPaymentModes: Only the methods and instruments matching your constraints will be shown to customers. All other payment options are suppressed.
+
+disabledPaymentModes: The specified methods and instruments are hidden, and everything else remains available.
+
+Important: You cannot use both enabledPaymentModes and disabledPaymentModes in the same request. Choose one approach per transaction.
+
+Wildcard Behavior
+Omitting a field from a constraint means “match all values for that dimension.” You only need to specify the dimensions you want to restrict.
+
+
+{
+  "type": "CARD",
+  "types": ["CREDIT_CARD"]
+}
+This allows all credit cards regardless of network, variant, or geography, because networks, variants, and geoScopes are all omitted (wildcard).
+
+Per-Transaction Scope
+Payment mode configuration applies only to the specific Create Payment call in which it is passed. There is no persistent merchant-level configuration. Each order can have a different configuration.
+
+Note: Only the first constraint for each type value is processed. If you include two objects with “type“: “UPI“, only the first one takes effect.
+
+Example Payload
+This example enables only GPay UPI intent payments and domestic Visa or Mastercard credit cards:
+
+
+curl -X POST https://api.phonepe.com/apis/pg/checkout/v2/pay \
+  -H "Content-Type: application/json" \
+  -H "Authorization: O-Bearer <token>" \
+  -d '{
+    "merchantOrderId": "ORDER_123",
+    "amount": 50000,
+    "paymentFlow": {
+      "type": "PG_CHECKOUT",
+      "merchantUrls": {
+        "redirectUrl": "https://www.yoursite.com/callback"
+      },
+      "paymentModeConfig": {
+        "version": "V2",
+        "enabledPaymentModes": [
+          {
+            "type": "UPI",
+            "flows": ["INTENT"],
+            "apps": ["phonepe"]
+          },
+          {
+            "type": "CARD",
+            "types": ["CREDIT_CARD"],
+            "networks": ["VISA", "MASTER_CARD"],
+            "geoScopes": ["DOMESTIC"]
+          }
+        ]
+      }
+    }
+  }'
+Payload Breakdown:
+
+UPI: Shows only the PhonePe intent flow. Collect, QR, other apps, and UPI instruments like RuPay CC or Credit Line are hidden.
+Card: Shows only domestic Visa and Mastercard credit cards. Debit cards, international cards, other networks, and EMI are hidden.
+NetBanking: Not included in enabledPaymentModes, so it is hidden entirely.
+Payment Mode Reference
+Use this complete reference to configure individual payment modes. Allow or block specific options by adding a constraint object to enabledPaymentModes or disabledPaymentModes inside paymentModeConfig.
+
+UPI
+Control which UPI flows, apps, and instruments are available. A single "type": "UPI" object covers all UPI payment methods, you do not need separate entries for Intent, QR, and Collect.
+
+Parameters
+Add an object with "type": "UPI" to enabledPaymentModes or disabledPaymentModes. All dimension fields are optional, omitting a field matches all values for that dimension.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "UPI".
+flows	array	Optional	All flows	Accepted values: "INTENT", "COLLECT", "QR".
+apps	array	Optional	All apps	Allowed apps (lowercase). See Supported Values.
+instruments	array	Optional	All instruments	Accepted values: "BANK_ACCOUNT", "RUPAY_CC", "CREDIT_LINE".
+Note:
+
+apps values are case-sensitive and must be lowercase (for example, “phonepe”, “gpay”). Uppercase values will not match.
+Only the first "type": "UPI" constraint in the list is processed. If you include multiple UPI objects, only the first takes effect.
+How Dimensions Interact
+All fields within the UPI constraint are evaluated with AND logic. A UPI payment option is shown only when it matches every specified dimension.
+
+flows	apps	instruments	Resulting Behavior
+["INTENT"]	["gpay"]	["BANK_ACCOUNT"]	GPay intent payments from a bank account only.
+["INTENT"]	["gpay"]	(omitted)	GPay intent payments using any instrument.
+["INTENT"]	(omitted)	(omitted)	All apps and instruments via intent flow
+(omitted)	["phonepe"]	(omitted)	PhonePe via any flow (intent, collect, QR).
+(omitted)	(omitted)	[“BANK_ACCOUNT”]	All apps and flows, but bank account instrument only.
+Configuration Examples
+1. Allow PhonePe intent only
+Show only the PhonePe UPI intent option. All other UPI apps, QR, and Collect are hidden.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "UPI",
+          "flows": ["INTENT"],
+          "apps": ["PhonePe"]
+        }
+      ]
+    }
+  }
+}
+2. Allow QR only
+Show only the UPI QR code option. Intent and Collect flows are hidden.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "UPI",
+          "flows": ["QR"]
+        }
+      ]
+    }
+  }
+}
+3. Block Credit Line instruments
+Allow all UPI flows and apps, but exclude UPI Credit Line (BNPL/credit-based UPI instruments).
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "UPI",
+          "instruments": ["CREDIT_LINE"]
+        }
+      ]
+    }
+  }
+}
+5. Allow PhonePe and GPay, all flows
+Show only PhonePe and GPay across all UPI flows (intent, collect, QR). All other UPI apps are hidden.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "UPI",
+          "apps": ["phonepe", "gpay"]
+        }
+      ]
+    }
+  }
+}
+4. Disable UPI entirely
+Block all UPI payment options. All other enabled payment methods remain available.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "UPI"
+        }
+      ]
+    }
+  }
+}
+Note: Omitting all dimension fields (flows, apps, instruments) in disabledPaymentModes disables all UPI options entirely.
+
+Card
+Use the CARD constraint to control which card types, networks, variants, and geographies are available to your customers. You can allow or block combinations across all four dimensions.
+
+Important: Disabling the CARD payment mode also disables EMI options, since EMI is processed through the card payment flow. If you want to disable only EMI while keeping cards active, use the EMI constraint instead.
+
+Parameters
+Add an object with "type": "CARD" to enabledPaymentModes or disabledPaymentModes. All dimension fields are optional, omitting a field matches all values for that dimension.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "CARD".
+types	array of strings	Optional	All types	Card types to allow or block. Accepted values: "CREDIT_CARD", "DEBIT_CARD".
+networks	array of strings	Optional	All networks	Card networks to allow or block. Accepted values: "VISA", "MASTER_CARD", "RUPAY", "AMEX", "DINERS_CLUB".
+variants	array of strings	Optional	All variants	Card tier to allow or block. Accepted values: "CONSUMER", "PREMIUM", "SUPER_PREMIUM", "CORPORATE".
+geoScopes	array of strings	Optional	All geographies	Card issuing geography to allow or block. Accepted values: "DOMESTIC", "INTERNATIONAL".
+How Dimensions Interact
+All fields within the card constraint are evaluated with AND logic. A card is shown only when it matches every specified dimension.
+
+types	networks	variants	geoScopes	Result
+["CREDIT_CARD"]	["VISA"]	(omitted)	["DOMESTIC"]	Domestic Visa credit cards (all variants)
+["DEBIT_CARD"]	["RUPAY"]	(omitted)	(omitted)	All RuPay debit cards
+(omitted)	(omitted)	["CORPORATE"]	(omitted)	All corporate cards (credit and debit, any network)
+["CREDIT_CARD"]	["VISA", "MASTER_CARD"]	["CONSUMER", "PREMIUM"]	["DOMESTIC"]	Domestic Visa/Mastercard consumer and premium credit cards
+(omitted)	(omitted)	(omitted)	["INTERNATIONAL"]	All international cards
+Card Variant Tiers
+Variant	Description
+CONSUMER	Standard consumer cards for everyday personal use
+PREMIUM	Premium consumer cards with rewards and lifestyle benefits
+SUPER_PREMIUM	Super-premium cards (Signature, Infinite, World Elite tier)
+CORPORATE	Corporate or business expense cards
+Examples
+1. Allow domestic Visa and Mastercard credit cards only
+Show only domestic Visa and Mastercard credit cards. Debit cards, international cards, RuPay, Amex, and Diners Club are hidden.
+
+2. Block international cards
+Allow all domestic cards; block all international cards.
+
+3. Allow domestic debit cards only
+Show only domestic debit cards across all networks.
+
+4. Allow corporate cards only
+Show only corporate cards (useful for B2B invoicing flows where only corporate expense cards are expected).
+
+5. Disable cards entirely
+Block all card payments. Note that this also disables all EMI options.
+
+Important: Disabling CARD with an empty constraint (no dimension fields) blocks all card payments and all EMI options.
+
+NetBanking
+Use the NET_BANKING constraint to control which banks are available for retail net banking payments. You can allowlist(enabledPaymentModes) a specific set of banks or blocklist(disabledPaymentModes) certain banks while keeping all others available.
+
+Parameters
+Add an object with "type": "NET_BANKING" to enabledPaymentModes or disabledPaymentModes.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "NET_BANKING".
+banks	array of strings	Optional	All banks	Bank codes to allow or block. Omit to match all supported banks. See Supported Values and Bank Codes for the full list.
+Note: 
+
+Bank codes are uppercase identifiers (for example, "HDFC", "ICIC", "SBIN"). See the Supported Values page for the complete list.
+Only the first "type": "NET_BANKING" constraint in the list is processed. If you include multiple net banking objects, only the first takes effect.
+Examples
+1. Allow specific banks only
+Show only HDFC, ICICI, and SBI for net banking. All other banks are hidden.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "NET_BANKING",
+          "banks": ["HDFC", "ICIC", "SBIN"]
+        }
+      ]
+    }
+  }
+}
+2. Block specific banks
+Allow all banks except Axis Bank and Yes Bank.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "NET_BANKING",
+          "banks": ["UTIB", "YESB"]
+        }
+      ]
+    }
+  }
+}
+3. Disable net banking entirely
+Block all net banking options. All other enabled payment methods remain available.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "NET_BANKING"
+        }
+      ]
+    }
+  }
+}
+Note: Omitting banks entirely in disabledPaymentModes disables all net banking options.
+
+Corporate Net Banking
+Use the CORPORATE_NET_BANKING constraint to control which banks are available for corporate net banking payments. This is separate from retail NetBanking and use this mode for B2B or corporate payment flows.
+
+Note: Corporate net banking uses the same bank codes as retail net banking. The only difference is the type value: "CORPORATE_NET_BANKING" instead of "NET_BANKING".
+
+Parameters
+Add an object with "type": "CORPORATE_NET_BANKING" to enabledPaymentModes or disabledPaymentModes.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "CORPORATE_NET_BANKING".
+banks	array of strings	Optional	All banks	Corporate bank codes to allow or block. Omit to match all supported banks. See Supported Values — Bank Codes for the full list.
+Note: Only the first "type": "CORPORATE_NET_BANKING" constraint in the list is processed. If you include multiple corporate net banking objects, only the first takes effect.
+
+Examples
+1. Allow specific corporate banks only
+Show only HDFC and ICICI for corporate net banking. All other corporate banking options are hidden.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "CORPORATE_NET_BANKING",
+          "banks": ["HDFC", "ICIC"]
+        }
+      ]
+    }
+  }
+}
+2. Disable corporate net banking entirely
+Block all corporate net banking options. Retail net banking is not affected.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "CORPORATE_NET_BANKING"
+        }
+      ]
+    }
+  }
+}
+EMI
+Use the EMI constraint to control which EMI instrument types are available. You can disable EMI entirely or restrict it to specific instrument types.
+
+Important: EMI is automatically disabled when you disable the CARD payment mode. If you want to disable only EMI while keeping card payments active, use this EMI constraint explicitly.
+
+Parameters
+Add an object with "type": "EMI" to enabledPaymentModes or disabledPaymentModes.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "EMI".
+types	array of strings	Optional	All types	EMI instrument types to allow or block. Omit to match all types. Currently supported value: "CREDIT_CARD".
+Note: Only the first "type": "EMI" constraint in the list is processed. If you include multiple EMI objects, only the first takes effect.
+
+Examples
+1. Disable EMI entirely
+Block all EMI payment options while keeping card payments available.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "EMI"
+        }
+      ]
+    }
+  }
+}
+2. Allow credit card EMI only
+Restrict EMI to credit card instruments only.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "EMI",
+          "types": ["CREDIT_CARD"]
+        }
+      ]
+    }
+  }
+}
+Wallet
+Use the WALLET constraint to control which wallet providers are available to your customers. You can disable wallets entirely or restrict to specific providers.
+
+Parameters
+Add an object with "type": "WALLET" to enabledPaymentModes or disabledPaymentModes.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "WALLET".
+wallets	array of strings	Optional	All wallets	Wallet providers to allow or block. Omit to match all supported providers. Currently supported value: "PHONEPE".
+Note: Only the first "type": "WALLET" constraint in the list is processed. If you include multiple wallet objects, only the first takes effect.
+
+Examples
+1. Disable wallet entirely
+Block all wallet payment options. All other enabled payment methods remain available.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "disabledPaymentModes": [
+        {
+          "type": "WALLET"
+        }
+      ]
+    }
+  }
+}
+2. Allow PhonePe wallet only
+Restrict wallet payments to PhonePe only.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "version": "V2",
+      "enabledPaymentModes": [
+        {
+          "type": "WALLET",
+          "wallets": ["PHONEPE"]
+        }
+      ]
+    }
+  }
+}
+ayment Modes V1
+This page documents the V1 schema for paymentModeConfig. V1 is the original payment mode configuration schema and remains supported for merchants who integrated before V2 was introduced.
+
+If you are starting a new integration, use V2. V2 provides finer control over card networks, variants, geography, UPI apps, instruments, and bank-level filtering. See Configure Payment Modes for the V2 reference.
+
+Use V1 config
+You can use version v1 in one of two ways.
+
+Omit the version field from paymentModeConfig entirely, or
+Set "version": "V1" explicitly
+Both produce identical behaviour. V1 and V2 schemas are mutually exclusive and once you set "version": "V2", all constraint objects must follow the V2 schema.
+
+Request Body Structure
+paymentModeConfig is nested inside paymentFlow. It is not a top-level field.
+
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 1000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        { "type": "UPI_INTENT" },
+        { "type": "UPI_QR" },
+        { "type": "CARD", "cardTypes": ["CREDIT_CARD", "DEBIT_CARD"] }
+      ]
+    }
+  }
+}
+Note: The version field is omitted above. You may also set "version": "V1" explicitly, both are equivalent.
+
+Parameter	Type	Mandatory	Default	Description
+version	string	Optional	V1	Omit this field or set "V1" to use the V1 schema. Set "V2" to switch to the V2 schema.
+enabledPaymentModes	array of objects	Conditional	—	List of payment mode constraints that define the allowlist. Mutually exclusive with disabledPaymentModes.
+disabledPaymentModes	array of objects	Conditional	—	List of payment mode constraints that define the blocklist. Mutually exclusive with enabledPaymentModes.
+Payment Mode Constraint Object (V1)
+Each element in enabledPaymentModes or disabledPaymentModes is a constraint object identified by its type field.
+
+Important: V1 type values are different from V2. UPI is split into three separate types (UPI_INTENT, UPI_QR, UPI_COLLECT) rather than a single UPI type with a flows field. Using V2 type values (such as "UPI") in a V1 request will not work.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	The payment mode to configure. Accepted values: "UPI_INTENT", "UPI_QR", "UPI_COLLECT", "CARD", "NET_BANKING".
+UPI_INTENT
+Controls UPI intent flow, the flow where the customer is redirected to a UPI app on their device.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "UPI_INTENT".
+Note: V1 does not support filtering by UPI app or instrument. To restrict by app or instrument, migrate to V2 and use type: "UPI" with apps and instruments fields.
+
+Example
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        { "type": "UPI_INTENT" }
+      ]
+    }
+  }
+}
+UPI_QR
+Controls UPI QR code flow, the flow where a QR code is shown on screen for the customer to scan with any UPI app.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "UPI_QR".
+Example
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        { "type": "UPI_QR" }
+      ]
+    }
+  }
+}
+UPI_COLLECT
+Controls UPI collect flow, the flow where the customer enters their UPI ID (VPA) and receives a collect request in their UPI app.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "UPI_COLLECT".
+Example
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        { "type": "UPI_COLLECT" }
+      ]
+    }
+  }
+}
+CARD
+Controls card payments. V1 supports filtering by card type (credit or debit) using the cardTypes field.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "CARD".
+cardTypes	array of strings	Optional	All types	Card types to allow or block. Accepted values: "CREDIT_CARD", "DEBIT_CARD". Omit to match all card types.
+Note: V1 does not support filtering by card network, variant, or geography. To filter by network (Visa, Mastercard, RuPay…), variant (consumer, corporate…), or geography (domestic, international), migrate to V2 and use type: "CARD" with networks, variants, and geoScopes fields.
+
+Example: Allow credit cards only
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        {
+          "type": "CARD",
+          "cardTypes": ["CREDIT_CARD"]
+        }
+      ]
+    }
+  }
+}
+Example: Allow all card types
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        {
+          "type": "CARD"
+        }
+      ]
+    }
+  }
+}
+NET_BANKING
+Controls retail net banking payments. V1 does not support bank-level filtering, you can only enable or disable net banking as a whole.
+
+Parameter	Type	Mandatory	Default	Description
+type	string	Required	—	Must be "NET_BANKING".
+Note: V1 does not support filtering by specific banks. To restrict net banking to a list of banks (for example, HDFC and ICICI only), migrate to V2 and use type: "NET_BANKING" with the banks field.
+
+Example: Enable net banking
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "enabledPaymentModes": [
+        { "type": "NET_BANKING" }
+      ]
+    }
+  }
+}
+Example: Disable net banking
+
+{
+  "merchantOrderId": "ORDER_123",
+  "amount": 50000,
+  "paymentFlow": {
+    "type": "PG_CHECKOUT",
+    "merchantUrls": {
+      "redirectUrl": "https://www.yoursite.com/callback"
+    },
+    "paymentModeConfig": {
+      "disabledPaymentModes": [
+        { "type": "NET_BANKING" }
+      ]
+    }
+  }
+}
+V1 Limitations
+V1 provides coarse-grained, method-level control only. The following capabilities are not available in V1:
+
+Capability	V1	Workaround
+Filter UPI by app (GPay, PhonePe…)	Not supported	Migrate to V2 — use type: "UPI" with apps
+Filter UPI by instrument (RuPay CC, Credit Line…)	Not supported	Migrate to V2 — use type: "UPI" with instruments
+Filter cards by network (Visa, Mastercard, RuPay…)	Not supported	Migrate to V2 — use type: "CARD" with networks
+Filter cards by variant (consumer, corporate, premium…)	Not supported	Migrate to V2 — use type: "CARD" with variants
+Filter cards by geography (domestic vs. international)	Not supported	Migrate to V2 — use type: "CARD" with geoScopes
+Filter net banking by specific banks	Not supported	Migrate to V2 — use type: "NET_BANKING" with banks
+Corporate net banking control	Not supported	Migrate to V2 — use type: "CORPORATE_NET_BANKING"
+EMI control (independent of cards)	Not supported	Migrate to V2 — use type: "EMI"
+Wallet control	Not supported	Migrate to V2 — use type: "WALLET"
+Migrating to V2
+To migrate from V1 to V2:
+
+Add "version": "V2" inside your paymentModeConfig object.
+Replace V1 type values with their V2 equivalents:
+V1 Type	V2 Equivalent
+UPI_INTENT	"type": "UPI", "flows": ["INTENT"]
+UPI_QR	"type": "UPI", "flows": ["QR"]
+UPI_COLLECT	"type": "UPI", "flows": ["COLLECT"]
+CARD with cardTypes	"type": "CARD" with types field
+NET_BANKING	"type": "NET_BANKING" (same, now supports banks filter)
+Remove the cardTypes field and replace with types for the CARD constraint.
+Test your integration to confirm behavior is as expected.
+Important: Do not mix V1 and V2 type values in the same request. Once "version": "V2" is set, type values such as UPI_INTENT, UPI_QR, and UPI_COLLECT are not recognized.Supported Values
+This page is a complete reference of all accepted values for payment mode configuration fields. Use these values verbatim in your API requests and they are case-sensitive.
+
+UPI
+UPI Flows (flows)
+Value	Description
+INTENT	UPI intent flow — customer taps to pay in their UPI app
+COLLECT	UPI collect flow — customer enters their UPI ID to receive a payment request
+QR	UPI QR code flow — customer scans a QR code with their UPI app
+UPI Apps (apps)
+Note: All apps values are lowercase.
+
+Value	App Name
+phonepe	PhonePe
+gpay	Google Pay
+paytm	Paytm
+bhim	BHIM
+amazon	Amazon Pay
+cred	CRED
+supermoney	SuperMoney
+others	All other UPI-compliant apps not listed above
+Note: Use "others" to represent any UPI app not explicitly listed. Including "others" in an allowlist enables all unlisted UPI apps.
+
+UPI Instruments (instruments)
+Value	Description
+BANK_ACCOUNT	Standard UPI bank account linked to the customer’s UPI ID
+RUPAY_CC	RuPay credit card linked to UPI
+CREDIT_LINE	UPI credit line instruments (BNPL, pay-later products)
+Cards
+Card Types (types)
+Value	Description
+CREDIT_CARD	Credit cards
+DEBIT_CARD	Debit cards
+Card Networks (networks)
+Value	Network Name
+VISA	Visa
+MASTER_CARD	Mastercard
+RUPAY	RuPay
+AMEX	American Express
+DINERS_CLUB	Diners Club
+Note: MASTER_CARD is spelled with an underscore. Using "MASTERCARD" (no underscore) will not be recognized.
+
+Card Variants (variants)
+Value	Description
+CONSUMER	Standard consumer cards for everyday personal use
+PREMIUM	Premium consumer cards with rewards and lifestyle benefits
+SUPER_PREMIUM	Super-premium cards (Signature, Infinite, World Elite tier)
+CORPORATE	Corporate or business expense cards
+Geographic Scopes (geoScopes)
+Value	Description
+DOMESTIC	Cards issued by Indian banks
+INTERNATIONAL	Cards issued by banks outside India
+Net Banking
+Bank Codes (banks)
+Code	Bank Name
+HDFC	HDFC Bank
+ICIC	ICICI Bank
+SBIN	State Bank of India
+UTIB	Axis Bank
+KKBK	Kotak Mahindra Bank
+PUNB	Punjab National Bank
+BKID	Bank of India
+CNRB	Canara Bank
+FDRL	Federal Bank
+IOBA	Indian Overseas Bank
+ORBC	Oriental Bank of Commerce
+SIBL	South Indian Bank
+UBIN	Union Bank of India
+VIJB	Vijaya Bank
+YESB	Yes Bank
+BARB	Bank of Baroda
+CBIN	Central Bank of India
+INDB	IndusInd Bank
+IDFB	IDFC First Bank
+JAKA	Jammu & Kashmir Bank
+KVBL	Karur Vysya Bank
+NKGS	NKGSB Co-operative Bank
+SRCB	Saraswat Co-operative Bank
+TMBL	Tamilnad Mercantile Bank
+UCOBANK	UCO Bank
+ALLA	Allahabad Bank
+ANDB	Andhra Bank
+CORP	Corporation Bank
+DCBL	DCB Bank
+ESFB	Equitas Small Finance Bank
+IBKL	IDBI Bank
+IDBI	IDBI Bank (alternate code)
+LAVB	Lakshmi Vilas Bank
+MAHB	Bank of Maharashtra
+MSNU	Mehsana Urban Co-operative Bank
+NICB	New India Co-operative Bank
+RATN	RBL Bank
+RNSB	Rajkot Nagarik Sahakari Bank
+SCBL	Standard Chartered Bank
+STBP	Punjab & Sind Bank
+SYNB	Syndicate Bank
+TBSB	Thane Bharat Sahakari Bank
+TJSB	TJSB Sahakari Bank
+TNSC	Tamil Nadu State Apex Co-operative Bank
+UTKS	Uttarakhand Gramin Bank
+WBSC	West Bengal State Co-operative Bank
+PSIB	Punjab & Sind Bank (alternate code)
+Note: The same bank codes apply to both NET_BANKING and CORPORATE_NET_BANKING constraints.
+
+EMI
+EMI Instrument Types (types)
+Value	Description
+CREDIT_CARD	EMI via credit card (currently the only supported instrument type)
+Note: Additional EMI instrument types may be added in future releases. Omit the types field to automatically match all currently and future supported types.
+
+Wallet
+Wallet Providers (wallets)
+Value	Provider Name
+PHONEPE	PhonePe Wallet
+Note: Additional wallet providers may be added in future releases. Omit the wallets field to automatically match all currently and future supported providers.
+Invoke iframe PayPage
+To start accepting payments using PhonePe’s PayPage, you need to include the PhonePe Checkout script in your checkout page. This script helps show the payment page to users and supports two ways of opening it:
+
+In IFrame (Recommended) – the PayPage opens within your website.
+In Redirect Mode – the user is redirected to a new page.
+Include the PhonePe Checkout Script
+To begin, add the following JavaScript file to your checkout page:
+
+Include script
+
+<script src="https://mercury.phonepe.com/web/bundle/checkout.js"></script>
+After adding this script:
+
+This script will append the PhonePeCheckout object in the window object.
+This object provides two functions:
+PhonePeCheckout.transact: used to open the PayPage.
+PhonePeCheckout.closePage: used to manually close the PayPage when it’s in IFrame mode.
+Use these functions in your checkout flow as per your payment experience requirement.
+
+Invoking PayPage in IFrame Mode (Recommended)
+To open the PayPage directly within your website using an IFrame, call the transact() function like this:
+
+Code reference
+
+window.PhonePeCheckout.transact({ tokenUrl: "https://merchant-t2.phonepe.com/transact....", callback, type: "IFRAME" });
+tokenUrl should be passed with the redirectUrl received in the Payment API response payload from your backend server.
+callback is a function that runs after the PayPage is closed.
+Here’s an example callback function:
+
+Code reference
+
+function callback (response) {
+  if (response === 'USER_CANCEL') {
+    /* Add merchant's logic if they have any custom thing to trigger on UI after the transaction is cancelled by the user*/
+    return;
+  } else if (response === 'CONCLUDED') {
+    /* Add merchant's logic if they have any custom thing to trigger on UI after the transaction is in terminal state*/
+    return;
+  }
+}
+The response will either be ‘USER_CANCEL‘ or ‘CONCLUDED‘, so you can update your UI based on the result.
+
+Closing the PayPage IFrame Manually
+If you want to close the PayPage on your own logic (only in IFrame mode), use this function:
+
+Code reference
+
+window.PhonePeCheckout.closePage();
+⚠️ Use Only for Exceptional Cases!
+
+This function is not recommended for standard use cases, as the IFrame will close automatically once the payment is done. Only use it if you have a specific reason to manually close the PayPage.
+
+Invoking PayPage in Redirect Mode
+If you want to open the PayPage in a new tab or redirect the user to it, use the transact() function like this:
+
+Code reference
+
+window.PhonePeCheckout.transact({ tokenUrl });
+tokenUrl is the PayPage link that your backend will get through a webhook call.
+This will take the user to PhonePe’s PayPage.
+After completing the payment, the user will be redirected back to your website.
+Make sure your backend verifies the payment status and shows the appropriate message or page to the user.
+
+Integrating PhonePe Checkout with Flutter Web.
+If you’re building a Flutter web application, follow these steps to integrate the PayPage.
+
+Include the PhonePe Checkout JavaScript Package
+Add the PhonePe Checkout JavaScript package to your project by including the following script.
+This will load the PhonePe Checkout package into your project and make the PhonePeCheckout object available in the global window context.
+Include script
+
+<script src="https://mercury-stg.phonepe.com/web/bundle/checkout.js" defer></script>
+Define a JavaScript Function to Invoke PayPage
+Create a JavaScript function that calls the PhonePe Checkout transact function with a callback. This function should accept three parameters: tokenUrl, type, and callback.
+This function checks if the PhonePeCheckout object and its transact method are available, then calls transact with the provided parameters.
+Code reference
+
+window.checkout = (tokenUrl, type, callback) => {
+  if(window && window.PhonePeCheckout && window.PhonePeCheckout.transact) {
+     window.PhonePeCheckout.transact({tokenUrl, callback, type});
+  }
+}
+Define a Callback Function in Your Dart Code
+In your Flutter Dart code, define a callback function that will be triggered when a transaction either concludes or is canceled.
+This callback function receives a response parameter, which indicates the transaction status. You can use this parameter to update your UI or trigger any custom logic depending on whether the user canceled the transaction or it was completed successfully.
+Code reference
+
+void callback(response) {
+   if (response === 'USER_CANCEL') {
+     // Add merchant's logic if they have any custom thing to trigger on UI after the transaction is canceled by the user
+     return;
+   } else if (response === 'CONCLUDED') {
+     // Add merchant's logic if they have any custom thing to trigger on UI after the transaction is in terminal state
+     return;
+   }
+}
+Call the Checkout Function from Dart to Open PayPage
+When you want to open the PayPage from your Flutter web app, you can check if the checkout function is defined in the JavaScript context and then call it with the required parameters: tokenUrl, type, and the callback wrapped with js.allowInterop.
+Code reference
+
+import 'dart:js' as js;
+void handlePayPage() {
+   if(js.context.hasProperty('checkout')) {
+      // The package is loaded   
+      const redirectUrl = "PayPage Generated URL";
+      const type = "IFRAME";    
+      js.context.callMethod('checkout', [redirectUrl, type, js.allowInterop(callback)]);
+   }
+}
+
+Check Payment Status
+The Order Status API enables you to check the current status of a specific order by providing its order ID. It returns information indicating whether the order has been successfully completed with payment details, is part of a split payment using PPE_INTENT, has no payment attempts yet, or if the payment has failed. Additionally, it handles cases where the provided order ID is invalid. This helps you reliably track and manage the order and take necessary actions based on its status.
+
+Environment
+Environment	HTTP Method	API
+Sandbox	GET	https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/order/{merchantOrderId}/status
+Production	GET	https://api.phonepe.com/apis/pg/checkout/v2/order/{merchantOrderId}/status
+Request
+Request Headers
+Header Name	Header Value
+Content-Type	application/json
+Authorization	O-Bearer <merchant-auth-token>
+⚠️ For Partner Integrations!
+
+It is mandatory to include the X-MERCHANT-ID header with the MerchantID of the end merchant.
+
+Sample CURL Request
+
+curl --location 'https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/order/TX123rrty34432456/status?details=false' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: O-Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzT24iOjE3MTIyNTM2MjU2NDQsIm1lcmNoYW50SWQiOiJWMlNVQlVBVCJ9.7aVzYI_f_77-bBicEcRNuYx093b2wCsgl_WFNkKqAPY'
+Request Parameters
+Parameter Name	Description
+details	• true → return all attempt details under paymentDetails list
+• false → return only latest attempt details under paymentDetails list
+errorContext	• true → To receive the errorContext block with error details if the state is FAILED.
+• false → If the errorContext block is not required.
+merchantOrderId	Order ID created in a Payment request.
+Response
+Sample Response for the CURL Request
+
+{
+    "orderId": "OMO2403282020198641071317",
+    "state": "COMPLETED",
+    "amount": 1000,
+    "expireAt": 1711867462542,
+    "paymentDetails": [
+        {
+            "paymentMode": "UPI_QR",
+            "transactionId": "OM2403282020198651071949",
+            "timestamp": 1711694662542,
+            "amount": 1000,
+            "state": "COMPLETED",
+            "rail": {
+                "type": "UPI",
+                "utr": "<utr>",
+                "upiTransactionId": "<upiTransactionId>",
+                "vpa": "<vpa>"
+            },
+            "instrument": {
+                "type": "ACCOUNT",
+                "maskedAccountNumber": "<maskedAccountNumber>",
+                "accountType": "SAVINGS",
+                "accountHolderName": "<accountHolderName>"
+            }
+        }
+    ]
+}
+Case 1: Response for Order is completed and details = true
+
+{
+  "orderId": "OMO2407021511185686967711",
+  "state": "COMPLETED",
+  "amount": 1000,
+  "payableAmount": 1000,
+  "feeAmount": 0,
+  "expireAt": 1719913878566,
+  "paymentDetails": [
+    {
+      "transactionId": "OM2407021515097451914211",
+      "paymentMode": "UPI_INTENT",
+      "timestamp": 1719913509762,
+      "amount": 1000,
+      "payableAmount": 1000,
+      "feeAmount": 0,
+      "state": "COMPLETED",
+      "rail": {
+        "type": "UPI",
+        "upiTransactionId": "upi12313",
+        "vpa": "12****78@ybl"
+      },
+      "instrument": {
+        "type": "ACCOUNT",
+        "maskedAccountNumber": "******1234",
+        "accountType": "SAVINGS"
+      },
+      "splitInstruments": [
+        {
+          "instrument": {
+            "type": "ACCOUNT",
+            "maskedAccountNumber": "******1234",
+            "accountType": "SAVINGS"
+          },
+          "rail": {
+            "type": "UPI",
+            "utr": "455069731511",
+            "upiTransactionId": "YBL369f6d962de74c2680789bff8c11aec9",
+            "vpa": "12****78@ybl"
+          },
+          "amount": 1000
+        }
+      ]
+    }
+  ],
+  "metaInfo": {
+    "udf1": "",
+    "udf2": "",
+    "udf3": "",
+    "udf4": "",
+    "udf5": "",
+    "udf6": "",
+    "udf7": "",
+    "udf8": "",
+    "udf9": "",
+    "udf10": "",
+    "udf11": "",
+    "udf12": "",
+    "udf13": "",
+    "udf14": "",
+    "udf15": ""
+  }
+}
+Case 2: Response for PPE_INTENT split payment case
+
+{
+  "orderId": "OMO2407111823257502858511",
+  "state": "COMPLETED",
+  "amount": 200,
+  "payableAmount": 200,
+  "feeAmount": 0,
+  "expireAt": 1720703005748,
+  "paymentDetails": [
+    {
+      "transactionId": "OM2407111823340281302812",
+      "paymentMode": "UPI_INTENT",
+      "timestamp": 1720702414053,
+      "amount": 200,
+      "payableAmount": 200,
+      "feeAmount": 0,
+      "state": "COMPLETED",
+      "splitInstruments": [
+        {
+          "instrument": {
+            "type": "ACCOUNT",
+            "maskedAccountNumber": "******1234",
+            "accountType": "SAVINGS"
+          },
+          "rail": {
+            "type": "UPI",
+            "utr": "455948340054",
+            "upiTransactionId": "YBLec33d3d277264fd8ac5deeabfece2494",
+            "vpa": "12****78@ybl"
+          },
+          "amount": 100
+        },
+        {
+          "instrument": {
+            "type": "WALLET"
+          },
+          "rail": {
+            "type": "PPI_WALLET"
+          },
+          "amount": 100
+        }
+      ]
+    }
+  ],
+  "metaInfo": {
+    "udf1": "",
+    "udf2": "",
+    "udf3": "",
+    "udf4": "",
+    "udf5": "",
+    "udf6": "",
+    "udf7": "",
+    "udf8": "",
+    "udf9": "",
+    "udf10": "",
+    "udf11": "",
+    "udf12": "",
+    "udf13": "",
+    "udf14": "",
+    "udf15": ""
+  }
+}
+Case 3: Response for Payment Mode: CARD
+
+{
+    "orderId": "OMO2507241148405311106438",
+    "state": "COMPLETED",
+    "amount": 100,
+    "payableAmount": 100,
+    "feeAmount": 0,
+    "expireAt": 1753338820531,
+    "paymentDetails":
+    [
+        {
+            "transactionId": "OM2507241150264011152620",
+            "paymentMode": "CARD",
+            "timestamp": 1753338026421,
+            "amount": 100,
+            "payableAmount": 100,
+            "feeAmount": 0,
+            "state": "COMPLETED",
+            "instrument":
+            {
+                "type": "CREDIT_CARD",
+                "bankId": "HDFC",
+                "brn": "520506406845",
+                "geoScope": "DOMESTIC",
+                "cardNetwork": "VISA",
+                "maskedCardNumber": "******1234"
+            },
+            "rail":
+            {
+                "type": "PG",
+                "authorizationCode": "088005"
+            },
+            "splitInstruments":
+            [
+                {
+                    "instrument":
+                    {
+                        "type": "CREDIT_CARD",
+                        "bankId": "HDFC",
+                        "brn": "520506406845",
+                        "geoScope": "DOMESTIC",
+                        "cardNetwork": "VISA",
+                        "maskedCardNumber": "******1234"
+                    },
+                    "rail":
+                    {
+                        "type": "PG",
+                        "authorizationCode": "088005"
+                    },
+                    "amount": 100
+                }
+            ]
+        }
+    ],
+    "metaInfo":
+    {
+        "udf1": "Harshad",
+        "udf2": "30",
+        "udf3": "UDF3",
+        "udf4": "UDF4",
+        "udf5": "UDF5",
+        "udf6": "UDF6",
+        "udf7": "UDF7",
+        "udf8": "UDF8",
+        "udf9": "UDF9",
+        "udf10": "UDF10",
+        "udf11": "UDF11",
+        "udf12": "UDF12",
+        "udf13": "UDF13",
+        "udf14": "UDF14",
+        "udf15": "UDF15"
+    }
+}
+Case 4: Response for No payment attempt is made for the order
+
+{
+    "orderId": "OMO2407111821482103732111",
+    "state": "PENDING",
+    "amount": 100,
+    "expireAt": 1720702908208,
+    "paymentDetails": [],
+    "metaInfo": {
+        "udf1": "additional-information-1",
+        "udf2": "additional-information-2",
+        "udf3": "additional-information-3",
+        "udf4": "additional-information-4",
+        "udf5": "additional-information-5",
+        "udf6": "additional-information-6",
+        "udf7": "additional-information-7",
+        "udf8": "additional-information-8",
+        "udf9": "additional-information-9",
+        "udf10": "additional-information-10",
+        "udf11": "additional-information-11",
+        "udf12": "additional-information-12",
+        "udf13": "additional-information-13",
+        "udf14": "additional-information-14",
+        "udf15": "additional-information-15"
+    }
+}
+Case 5: Response for Order is Failed
+
+{
+    "orderId": "OMO2407121214395503786511",
+    "state": "FAILED",
+    "amount": 200,
+    "expireAt": 1720767279548,
+    "errorCode": "INVALID_MPIN",
+    "detailedErrorCode": "ZM",
+    "paymentDetails": [
+        {
+            "transactionId": "OM2407121214579231302711",
+            "paymentMode": "UPI_COLLECT",
+            "timestamp": 1720766697944,
+            "amount": 200,
+            "payableAmount": 200,
+            "feeAmount": 0,
+            "state": "FAILED",
+            "errorCode": "INVALID_MPIN",
+            "detailedErrorCode": "ZM"
+        }
+    ],
+    "errorContext": {
+       "errorCode" : "INVALID_MPIN",
+       "detailedErrorCode" : "ZM",
+       "source" : "CUSTOMER",
+       "stage" : "AUTHENTICATION",
+       "description" : "Wrong MPIN was entered"
+    },
+    "metaInfo": {
+        "udf1": "<additional-information-1>",
+        "udf2": "<additional-information-2>",
+        "udf3": "<additional-information-3>",
+        "udf4": "<additional-information-4>",
+        "udf5": "<additional-information-5>",
+        "udf6": "<additional-information-6>",
+        "udf7": "<additional-information-7>",
+        "udf8": "<additional-information-8>",
+        "udf9": "<additional-information-9>",
+        "udf10": "<additional-information-10>",
+        "udf11": "<additional-information-11>",
+        "udf12": "<additional-information-12>",
+        "udf13": "<additional-information-13>",
+        "udf14": "<additional-information-14>",
+        "udf15": "<additional-information-15>"
+    }
+}
+Case 6: Response for Invalid order ID
+
+{  
+    "code": "INVALID_MERCHANT_ORDER_ID",
+    "message": "No entry found for given merchant order id"
+}
+Response Parameters
+Field Name	Data Type	Description
+orderId	String	Payment Gateway generated internal order ID
+state	String	State of order; Expected Values:
+• PENDING
+• FAILED
+• COMPLETED
+amount	String	Order amount in paisa
+expireAt	Long	Order expiry time in epoch
+metaInfo	Object	• For udf1 to udf10, there is no constraint. Maximum length = 256 characters
+• For udf11 to udf15, alphanumeric values with _-+@. are allowed. Maximum length = 50 characters
+Note: It is mandatory to keep the parameter names udf1, udf2, etc., exactly as they are in the metainfo block. Renaming these key values will result in a production error.
+paymentDetails	List	Contains a list of details of each payment attempt made corresponding to this order
+paymentDetails[*].paymentMode	String	Mode of payment; Expected Values:
+• UPI_INTENT
+• UPI_COLLECT
+• UPI_QR
+• CARD
+• NET_BANKING
+paymentDetails[*].timestamp	Long	Transaction attempt timestamp in epoch
+paymentDetails[*].amount	Long	Amount in paisa, corresponding to payment attempt
+paymentDetails[*].transactionId	String	Internal transaction ID for given payment attempt
+paymentDetails[*].state	String	Transaction attempt state; Expected Values:
+• PENDING
+• COMPLETED
+• FAILED
+paymentDetails[*].errorCode	String	Error code (Only present when the transaction state is failed)
+paymentDetails[*].detailedErrorCode	String	Detailed Error Code (Only present when the transaction state is failed)
+paymentDetails[*].rail	Object	Contains processing rail details under which payment attempt is made
+paymentDetails[*].rail.type	String	Type of rail. Expected values:
+• UPI
+• PG
+paymentDetails[*].instrument	Object	Contains instrument details
+paymentDetails[*].instrument.type	String	Type of payment instrument; Expected values:
+• ACCOUNT
+• CREDIT_CARD
+• DEBIT_CARD
+• NET_BANKING
+The paymentDetails object contains additional parameters, which are explained in the table below.
+
+Response Parameters for paymentDetails object:
+Field Name	Data Type	Description
+paymentDetails[*].paymentMode	String	Mode of payment; Expected Values:
+• UPI_INTENT
+• UPI_COLLECT
+• UPI_QR
+• CARD
+• NET_BANKING
+paymentDetails[*].timestamp	Long	Transaction attempt timestamp in epoch
+paymentDetails[*].amount	Long	Amount in paisa, corresponding to payment attempt
+paymentDetails[*].transactionId	String	Internal transaction ID for given payment attempt
+paymentDetails[*].state	String	Transaction attempt state; Expected Values:
+• PENDING
+• COMPLETED
+• FAILED
+paymentDetails[*].errorCode	String	Error code (Only present when the transaction state is failed)
+paymentDetails[*].detailedErrorCode	String	Detailed Error Code (Only present when the transaction state is failed)
+paymentDetails[*].rail	Object	Contains processing rail details under which payment attempt is made
+paymentDetails[*].rail.type	String	Type of rail. Expected values:
+• UPI
+• PG
+paymentDetails[*].instrument	Object	Contains instrument details
+paymentDetails[*].instrument.type	String	Type of payment instrument; Expected values:
+• ACCOUNT
+• CREDIT_CARD
+• DEBIT_CARD
+• NET_BANKING
+Verify a Sample Payment Status!
+headers
+Token
+string
+required
+Access Token you recieved
+O-Bearer 
+url params
+merchantOrderId
+string
+required
+Enter your merchantOrderId
+node
+node
+shell
+javascript
+python
+axios
+axios
+api
+node-fetch
+http
+request
+12345678910111213141516171819
+Copy Code
+Run
+API Response
+1
+You can also test this API request directly in Postman for a quick and easy integration check.

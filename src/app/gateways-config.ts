@@ -4,5 +4,5 @@ export const GATEWAYS_CONFIG = {
   payu: { enabled: true, name: "PayU" },
   pinelabs: { enabled: true, name: "PineLabs" },
   cashfree: { enabled: true, name: "Cashfree" },
-  phonepe: { enabled: false, name: "PhonePe PG" },
+  phonepe: { enabled: true, name: "PhonePe PG" },
 };

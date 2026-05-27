@@ -29,7 +29,7 @@ function CheckoutContent() {
   const initialPaymentId = searchParams.get("paymentId") || "";
   const initialError = searchParams.get("error") || "";
 
-  const [selectedGateway, setSelectedGateway] = useState("razorpay");
+  const [selectedGateway, setSelectedGateway] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed" | "keys_missing">(
     initialStatus === "success" || initialStatus === "failed" || initialStatus === "keys_missing" ? (initialStatus as any) : "idle"
@@ -54,6 +54,11 @@ function CheckoutContent() {
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedGateway) {
+      alert("Please select a payment gateway.");
+      return;
+    }
 
     const config = GATEWAYS_CONFIG[selectedGateway as keyof typeof GATEWAYS_CONFIG];
     if (!config?.enabled) {
@@ -218,9 +223,7 @@ function CheckoutContent() {
             tokenType: "TXN_TOKEN",
             amount: orderData.amount,
           },
-          payMode: {
-            order: ['UPI', 'CARD', 'NB', 'BALANCE', 'EMI', 'PPBL', 'PDC']
-          },
+
           handler: {
             transactionStatus: async function (paymentStatus: any) {
               console.log("Paytm transactionStatus callback:", paymentStatus);
@@ -474,11 +477,90 @@ function CheckoutContent() {
         setErrorMessage(err.message || "An unexpected error occurred.");
         setIsProcessing(false);
       }
+    } else if (selectedGateway === "phonepe") {
+      try {
+        const orderRes = await fetch("/api/phonepe/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            phone: formData.phone,
+          }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        const phonepeEnv = process.env.NEXT_PUBLIC_PHONEPE_ENV || orderData.env || "sandbox";
+        const scriptUrl = phonepeEnv === "production" || phonepeEnv === "live"
+          ? "https://mercury.phonepe.com/web/bundle/checkout.js"
+          : "https://mercury-stg.phonepe.com/web/bundle/checkout.js";
+
+        const scriptLoaded = await loadScript(scriptUrl);
+
+        if (!scriptLoaded || !(window as any).PhonePeCheckout) {
+          setPaymentStatus("failed");
+          setErrorMessage("PhonePe SDK failed to load.");
+          setIsProcessing(false);
+          return;
+        }
+
+        (window as any).PhonePeCheckout.transact({
+          tokenUrl: orderData.redirectUrl,
+          type: "IFRAME",
+          callback: async function (response: any) {
+            console.log("PhonePe transact callback:", response);
+            if (response === "USER_CANCEL") {
+              setIsProcessing(false);
+            } else if (response === "CONCLUDED") {
+              setIsProcessing(true);
+              try {
+                const verifyRes = await fetch("/api/phonepe/verify-payment", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orderId: orderData.orderId,
+                  }),
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (verifyRes.ok && verifyData.verified) {
+                  setPaymentId(orderData.orderId);
+                  setPaymentStatus("success");
+                } else {
+                  setPaymentStatus("failed");
+                  setErrorMessage(verifyData.error || "Verification failed.");
+                }
+              } catch (err: any) {
+                setPaymentStatus("failed");
+                setErrorMessage(err.message || "Verification request failed.");
+              } finally {
+                setIsProcessing(false);
+              }
+            }
+          },
+        });
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
     } else {
       setTimeout(() => {
         setIsProcessing(false);
         alert(
-          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, PayU, PineLabs, and Cashfree are live.`
+          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, PayU, PineLabs, Cashfree, and PhonePe are live.`
         );
       }, 1000);
     }
@@ -493,7 +575,7 @@ function CheckoutContent() {
     }, 500);
   };
 
-  const gateways = [
+  const gateways: { id: string; name: string; badge?: string }[] = [
     {
       id: "razorpay",
       name: "Razorpay",
@@ -520,7 +602,6 @@ function CheckoutContent() {
     {
       id: "phonepe",
       name: "PhonePe PG",
-      badge: "Mock",
     },
   ];
 
@@ -560,8 +641,11 @@ function CheckoutContent() {
 
   if (paymentStatus === "keys_missing") {
     const isCashfree = selectedGateway === "cashfree";
+    const isPhonepe = selectedGateway === "phonepe";
     const keysMessage = isCashfree
       ? "Cashfree API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      : isPhonepe
+      ? "PhonePe API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
       : "Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.";
 
     return (
@@ -578,6 +662,13 @@ function CheckoutContent() {
                   <div>NEXT_PUBLIC_CASHFREE_APP_ID=TESTxxxxxx</div>
                   <div>CASHFREE_SECRET_KEY=cfsk_ma_xxxxxx</div>
                   <div>NEXT_PUBLIC_CASHFREE_ENV=sandbox</div>
+                </>
+              ) : isPhonepe ? (
+                <>
+                  <div>NEXT_PUBLIC_PHONEPE_CLIENT_ID=M22BPAMTMAVQU_2605271104</div>
+                  <div>PHONEPE_CLIENT_SECRET=ZmNiYTJiZDItYWMzYi00OGEzLWFhOTgtMzAxNDhkMWJkNDJi</div>
+                  <div>NEXT_PUBLIC_PHONEPE_CLIENT_VERSION=1</div>
+                  <div>NEXT_PUBLIC_PHONEPE_ENV=sandbox</div>
                 </>
               ) : (
                 <>
@@ -810,7 +901,7 @@ function CheckoutContent() {
 
                 <button
                   type="submit"
-                  disabled={isProcessing}
+                  disabled={isProcessing || !selectedGateway}
                   className="btn btn-dark btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2"
                 >
                   {isProcessing ? (
@@ -823,7 +914,12 @@ function CheckoutContent() {
                     
                     <>
                       <i className="bi"></i>
-                      <span>Test using {gateways.find(g => g.id === selectedGateway)?.name}</span>
+                      <span>
+                        {selectedGateway 
+                          ? `Test using ${gateways.find(g => g.id === selectedGateway)?.name}` 
+                          : "Select Payment Gateway"
+                        }
+                      </span>
                     </>
                   )}
                 </button>

@@ -64,6 +64,15 @@ export async function POST(req: NextRequest) {
         userInfo: {
           custId: `CUST_${Date.now()}`,
         },
+        enablePaymentMode: [
+          { mode: "UPI" },
+          { mode: "BALANCE" },
+          { mode: "CC" },
+          { mode: "DC" },
+          { mode: "NB" },
+          { mode: "EMI" },
+          { mode: "PPBL" }
+        ],
       },
       head: {
         version: "v1",

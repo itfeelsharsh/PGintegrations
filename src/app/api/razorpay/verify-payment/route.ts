@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 async function computeHmacSha256(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -32,6 +33,16 @@ export async function POST(req: NextRequest) {
     }
 
     let keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    try {
+      const ctx = getCloudflareContext();
+      if (ctx && ctx.env) {
+        keySecret = keySecret || (ctx.env as any).RAZORPAY_KEY_SECRET;
+      }
+    } catch (e) {
+      // Ignore if not running in Cloudflare environment
+    }
+
     if (keySecret === "undefined" || keySecret === "null") keySecret = undefined;
 
     if (!keySecret) {

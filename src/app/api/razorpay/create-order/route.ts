@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,6 +8,16 @@ export async function POST(req: NextRequest) {
 
     let keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     let keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    try {
+      const ctx = getCloudflareContext();
+      if (ctx && ctx.env) {
+        keyId = keyId || (ctx.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        keySecret = keySecret || (ctx.env as any).RAZORPAY_KEY_SECRET;
+      }
+    } catch (e) {
+      // Ignore if not running in Cloudflare environment
+    }
 
     // Handle bundler replacement quirks
     if (keyId === "undefined" || keyId === "null") keyId = undefined;

@@ -1,11 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "pg-integrations",
+  "name": "payments",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-05-15",
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

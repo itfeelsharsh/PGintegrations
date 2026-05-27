@@ -823,7 +823,7 @@ function CheckoutContent() {
                     
                     <>
                       <i className="bi"></i>
-                      <span>Pay with {gateways.find(g => g.id === selectedGateway)?.name}</span>
+                      <span>Test using {gateways.find(g => g.id === selectedGateway)?.name}</span>
                     </>
                   )}
                 </button>

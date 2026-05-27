@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build:next": "next build",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
     "build:worker": "opennextjs-cloudflare build",
     "dev:worker": "wrangler dev",
     "preview": "npm run build:worker && npm run dev:worker",

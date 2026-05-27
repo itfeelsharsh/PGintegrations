@@ -25,20 +25,26 @@ function CheckoutContent() {
   const productName = searchParams.get("product") || "VoltGlide Obsidian Pro";
   const amount = searchParams.get("amount") || "8999";
 
+  const initialStatus = searchParams.get("status") || "idle";
+  const initialPaymentId = searchParams.get("paymentId") || "";
+  const initialError = searchParams.get("error") || "";
+
   const [selectedGateway, setSelectedGateway] = useState("razorpay");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed" | "keys_missing">("idle");
-  const [paymentId, setPaymentId] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed" | "keys_missing">(
+    initialStatus === "success" || initialStatus === "failed" || initialStatus === "keys_missing" ? (initialStatus as any) : "idle"
+  );
+  const [paymentId, setPaymentId] = useState(initialPaymentId);
+  const [errorMessage, setErrorMessage] = useState(initialError);
 
   const [formData, setFormData] = useState({
     name: "Narinder Gandhi",
-    email: "narinder.gandhi@yahoo.co.in",
+    email: "narinder.gandhi@gmail.com",
     phone: "9876543210",
-    address: "123, MG Road, Indiranagar",
-    city: "Bengaluru",
-    state: "Karnataka",
-    zip: "560038",
+    address: "Prahlad Nagar, Satellite",
+    city: "Amdavad",
+    state: "Gujarat",
+    zip: "380015",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,11 +387,98 @@ function CheckoutContent() {
         setErrorMessage(err.message || "An unexpected error occurred.");
         setIsProcessing(false);
       }
+    } else if (selectedGateway === "pinelabs") {
+      try {
+        const orderRes = await fetch("/api/pinelabs/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            productInfo: productName,
+            firstname: formData.name || "Customer",
+            email: formData.email || "customer@example.com",
+            phone: formData.phone || "9999999999",
+          }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        if (orderData.redirect_url) {
+          window.location.href = orderData.redirect_url;
+        } else {
+          setPaymentStatus("failed");
+          setErrorMessage("Failed to retrieve redirect URL.");
+          setIsProcessing(false);
+        }
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
+    } else if (selectedGateway === "cashfree") {
+      try {
+        const orderRes = await fetch("/api/cashfree/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+          }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        const scriptLoaded = await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
+
+        if (!scriptLoaded || !(window as any).Cashfree) {
+          setPaymentStatus("failed");
+          setErrorMessage("Cashfree SDK failed to load.");
+          setIsProcessing(false);
+          return;
+        }
+
+        const cashfree = (window as any).Cashfree({
+          mode: orderData.env === "production" ? "production" : "sandbox",
+        });
+
+        cashfree.checkout({
+          paymentSessionId: orderData.payment_session_id,
+          redirectTarget: "_self",
+        });
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
     } else {
       setTimeout(() => {
         setIsProcessing(false);
         alert(
-          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, and PayU are live.`
+          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, PayU, PineLabs, and Cashfree are live.`
         );
       }, 1000);
     }
@@ -404,27 +497,25 @@ function CheckoutContent() {
     {
       id: "razorpay",
       name: "Razorpay",
-      badge: "Integrated",
+
     },
     {
       id: "paytm",
       name: "Paytm PG",
-      badge: "Integrated",
+
     },
     {
       id: "payu",
       name: "PayU India",
-      badge: "Integrated",
+
     },
     {
       id: "pinelabs",
       name: "PineLabs Plural",
-      badge: "Mock",
     },
     {
       id: "cashfree",
       name: "Cashfree",
-      badge: "Mock",
     },
     {
       id: "phonepe",
@@ -468,19 +559,32 @@ function CheckoutContent() {
   }
 
   if (paymentStatus === "keys_missing") {
+    const isCashfree = selectedGateway === "cashfree";
+    const keysMessage = isCashfree
+      ? "Cashfree API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      : "Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.";
+
     return (
       <div className="container text-center py-5">
         <div className="card shadow-sm border-warning mx-auto p-4" style={{ maxWidth: "500px" }}>
           <div className="card-body">
             <i className="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3"></i>
             <h4 className="fw-bold mb-3">Environment Keys Missing</h4>
-            <p className="text-secondary small mb-4">
-              Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.
-            </p>
+            <p className="text-secondary small mb-4">{keysMessage}</p>
 
             <div className="bg-light p-3 rounded text-start mb-4 font-monospace small border">
-              <div>NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxx</div>
-              <div>RAZORPAY_KEY_SECRET=xxxxxx</div>
+              {isCashfree ? (
+                <>
+                  <div>NEXT_PUBLIC_CASHFREE_APP_ID=TESTxxxxxx</div>
+                  <div>CASHFREE_SECRET_KEY=cfsk_ma_xxxxxx</div>
+                  <div>NEXT_PUBLIC_CASHFREE_ENV=sandbox</div>
+                </>
+              ) : (
+                <>
+                  <div>NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxx</div>
+                  <div>RAZORPAY_KEY_SECRET=xxxxxx</div>
+                </>
+              )}
             </div>
 
             <div className="d-grid gap-2">
@@ -650,11 +754,18 @@ function CheckoutContent() {
                             disabled={!isEnabled}
                             onChange={() => isEnabled && setSelectedGateway(gw.id)}
                           />
-                          <div className={`gateway-card border rounded p-3 h-100 d-flex align-items-center justify-content-between gateway-card-inner bg-white ${!isEnabled ? "bg-light text-muted border-dashed" : ""}`} style={{ cursor: isEnabled ? "pointer" : "not-allowed" }}>
-                            <h6 className="mb-0 fw-bold text-dark">{gw.name}</h6>
-                            <span className={`badge ${!isEnabled ? "bg-light text-muted border" : gw.id === 'razorpay' ? 'bg-primary' : 'bg-light text-dark'} border small`}>
-                              {isEnabled ? gw.badge : "Under Implementation"}
-                            </span>
+                          <div className={`gateway-card border rounded p-3 h-100 d-flex flex-column justify-content-between gateway-card-inner bg-white ${!isEnabled ? "bg-light text-muted border-dashed" : ""}`} style={{ cursor: isEnabled ? "pointer" : "not-allowed" }}>
+                            <div>
+                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                <div className="d-flex align-items-center">
+                                  <h6 className="mb-0 fw-bold text-dark">{gw.name}</h6>
+                                </div>
+                                <span className={`badge ${!isEnabled ? "bg-light text-muted border" : gw.id === 'razorpay' ? 'bg-primary' : 'bg-light text-dark'} border small`}>
+                                  {isEnabled ? gw.badge : "Under Implementation"}
+                                </span>
+                              </div>
+                     
+                            </div>
                           </div>
                         </label>
                       </div>

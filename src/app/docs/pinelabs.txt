@@ -1,0 +1,303 @@
+Inifinity Checkout
+Checkout Integration
+Learn how you can integrate with Pine Labs APIs to start accepting payments with our Infinity Checkout.
+
+Choose Your Integration Mode
+Select the integration method that best fits your needs. Both Redirect and Iframe modes follow the same integration steps.
+
+
+Redirect
+Redirect customers to a hosted checkout page
+Iframe
+Embed checkout directly in your page
+Integration Mode: Iframe
+Setup:
+Configure iframe dimensions
+User Experience:
+Embedded in your page
+Customization:
+Limited to theme colors
+Security:
+Fully managed
+
+📘
+Note:
+The integration steps remain the same for both the modes. Only the integration_mode value changes [REDIRECT , IFRAME].
+Integration Steps
+Follow the below steps to integrate with Pine Labs Infinity checkout APIs in your application.
+
+[Prerequisite] Generate Token
+Generate Checkout Link
+Launch Checkout
+📘
+Note
+Ensure you store your Client ID and Secret in your Backend securely.
+Integrate our APIs on your backend system.
+We strictly recommend not to call our APIs from the frontend.
+Failure to adhere to the above guidelines may result in legal implications. In such cases, you will be held responsible for any damage or loss arising from non-compliance.
+1. [Prerequisite] Generate Token
+Integrate our Generate Token API in your backend servers to generate the access token. Use the token generated to authenticate Pine Labs APIs.
+
+Below are the sample requests and response for the Generate Token API.
+
+cURL – UAT
+cURL – PROD
+Sample Response
+
+curl --request POST \
+--url https://pluraluat.v2.pinepg.in/api/auth/v1/token \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--header 'Request-Timestamp: 2024-07-09T07:57:08.022Z' \
+--header 'Request-ID: c17ce30f-f88e-4f81-ada1-c3b4909ed235' \
+--data '
+{
+  "client_id": "a17ce30e-f88e-4f81-ada1-c3b4909ed232",
+  "client_secret": "fgwei7egyhuggwp39w8rh",
+  "grant_type": "client_credentials"
+}
+'
+Click here for request and response parameter information.
+
+
+Refer to our Generate Token API documentation to learn more.
+
+2. Generate Checkout Link
+To generate a Pine Labs infinity checkout link, use our Generate Checkout Link API. Include the access token in the request headers for Bearer Authentication.
+
+Below are the sample requests and response for a Generate Checkout Link API.
+
+cURL - UAT
+cURL - PROD
+Sample Response
+
+curl --request POST \
+--url https://pluraluat.v2.pinepg.in/api/checkout/v1/orders \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' \
+--header 'Content-Type: application/json' \
+--header 'Request-ID: c17ce30f-f88e-4f81-ada1-c3b4909ed235' \
+--header 'Request-Timestamp: 2024-07-09T07:57:08.022Z' \
+--header 'accept: application/json' \
+--data '
+{
+  "merchant_order_reference": "112345",
+  "order_amount": {
+    "value": 1100,
+    "currency": "INR"
+  },
+  "integration_mode": "REDIRECT",
+  "pre_auth": false,
+  "allowed_payment_methods": [
+    "CARD",
+    "UPI",
+    "NETBANKING",
+    "POINTS",
+    "WALLET"
+  ],
+  "notes": "order1",
+  "callback_url": "https://sample-callback-url",
+  "failure_callback_url": "https://sample-failure-callback-url",
+  "purchase_details": {
+    "customer": {
+      "email_id": "kevin.bob@example.com",
+      "first_name": "Kevin",
+      "last_name": "Bob",
+      "customer_id": "123456",
+      "mobile_number": "9876543210",
+      "country_code": "91",
+      "billing_address": {
+        "address1": "10 Downing Street Westminster London",
+        "address2": "Oxford Street Westminster London",
+        "address3": "Baker Street Westminster London",
+        "pincode": "51524036",
+        "city": "Westminster",
+        "state": "Westminster",
+        "country": "London",
+        "full_name": "Kevin Bob",
+        "adddress_type": "Home",
+        "address_category": "billing"
+      },
+      "shipping_address": {
+        "address1": "10 Downing Street Westminster London",
+        "address2": "Oxford Street Westminster London",
+        "address3": "Baker Street Westminster London",
+        "pincode": "51524036",
+        "city": "Westminster",
+        "state": "Westminster",
+        "country": "London",
+        "full_name": "Kevin Bob",
+        "adddress_type": "Home",
+        "address_category": "shipping"
+      }
+    },
+    "merchant_metadata": {
+      "express_checkout_enabled": "TRUE",
+      "express_checkout_allowed_action": "checkoutCollectAddress",
+      "key1": "DD",
+      "key2": "XOF"
+    },
+    "cart_details": {
+      "cart_items": [
+        {
+          "item_id": "cart_id_1",
+          "item_name": "T Shirt",
+          "item_description": "Test Description",
+          "item_details_url": "https://chriscross.in/cdn/shop/files/95_800x.jpg",
+          "item_image_url": "https://chriscross.in/cdn/shop/files/95_800x.jpg",
+          "item_original_unit_price": 1,
+          "item_discounted_unit_price": 1,
+          "item_quantity": 1,
+          "item_currency": "INR"
+        }
+      ]
+    }
+  }
+}
+'
+📘
+Note:
+You can set pre-auth as true to use pre-authorization flow for card payments only through hosted checkout.
+Click here for request and response parameter information.
+
+Refer to our Generate Checkout Link API documentation to learn more.
+
+Refer to our Test Card Details documentation to learn more.
+
+3. Launch Checkout
+After successfully generating the checkout link, launch the checkout using the redirect_url. This can be done as listed below.
+
+Redirect Checkout
+I-Frame Checkout
+Manage Transactions
+Track and verify transaction status using Pine Labs APIs. To retrieve the latest status, use the Fetch APIs or subscribe to webhooks for real-time transaction updates.
+
+Get Order by Order ID
+Fetch real-time transaction status by order ID.
+
+Learn More
+Webhooks
+Configure webhook events for automatic transaction updates.
+
+Learn More
+Refunds
+Automatically process customer refunds whenever required.
+
+Learn More
+
+Pre Authorization Flow
+Our Orders API includes an optional pre-authorization feature. When pre-authorization is enabled (pre_auth = true), you can Capture a Payment for an order after successful delivery, ensuring that settlement remains on hold until then.
+
+📘
+Note:
+For pre_auth true
+
+On successful payment we send the webhook event ORDER_AUTHORIZED and the status of the payment is updated to AUTHORIZED.
+You can capture or cancel an order only when the order status is AUTHORIZED.
+For pre_auth false
+
+On successful payment we send the webhook event ORDER_PROCESSED and the status of the payment is updated to PROCESSED
+Once pre-authorization is enabled and the payment is successfully authorized, you have the following options:
+
+Capture Order: Utilize the Pine Labs Online capture order API in your backend to capture the payment against an order.
+
+Cancel Order: Use the Pine Labs Online cancel order API in your backend to cancel the payment against an order.
+
+1. Capture Order
+Use this API to capture the payment against an order. On successful capture of an order the order status is updated as processed.
+
+Shown below are the sample requests and sample response for a Capture Order API.
+
+cURL - UAT
+cURL - PROD
+Sample Response
+
+curl --request PUT \
+     --url https://pluraluat.v2.pinepg.in/api/pay/v1/orders/order_id/capture \
+     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' \
+     --header 'Content-Type: application/json' \
+     --header 'Request-ID: c17ce30f-f88e-4f81-ada1-c3b4909ed235' \
+     --header 'Request-Timestamp: 2024-07-09T07:57:08.022Z' \
+     --header 'accept: application/json' \
+     --data '
+{
+  "merchant_capture_reference": "merchant-capture-ref-r4y",
+  "capture_amount": {
+    "value": 4000,
+    "currency": "INR"
+  }
+}
+'
+Click here for request and response parameter information.
+Refer to our Capture Order API documentation to learn more.
+
+2. Cancel Order
+Use this API to cancel the payment against an order.
+
+Use the below endpoint to cancel the payment against the order.
+
+Cancel Order Endpoint for UAT
+Cancel Order Endpoint for PROD
+
+PUT: https://pluraluat.v2.pinepg.in/api/pay/v1/orders/{order_id}/cancel
+Shown below is a sample request and sample response for a Cancel Order API.
+
+Sample Response
+
+{
+  "data":{
+    "order_id":"v1-250124055307-aa-6OZ8sm",
+    "merchant_order_reference":"53cf1451-4dfd-417d-a1c8-c8bd603d5200",
+    "type":"CHARGE",
+    "status":"CANCELLED",
+    "challenge_url":"https://pluraluat.v2.pinepg.in/web/auth/landing/?token=S50f2FXi%2FYAGe2bLZEW%2FA2VHzXthz0m9igmtsP61ODtY5u4pR6RYB5IlJwK0%2Fuo%2FBs9",
+    "merchant_id":"111163",
+    "order_amount":{
+      "value":1600000,
+      "currency":"INR"
+    },
+    "pre_auth":false,
+    "callback_url":"https://sample-callback-url",
+    "failure_callback_url": "https://sample-failure-callback-url",
+    "allowed_payment_methods":[
+      "CARD",
+      "UPI",
+      "NETBANKING",
+      "POINTS",
+      "WALLET",
+      "CREDIT_EMI"
+    ],
+    "purchase_details":{
+      "customer":{
+        "country_code":"91",
+        "billing_address":{},
+        "shipping_address":{},
+        "is_edit_customer_details_allowed":false
+      }
+    },
+    "payments":[
+      {
+        "id":"v1-250124055307-aa-6OZ8sm-ce-a",
+        "merchant_payment_reference":"c7a7f778-b68f-462b-a6af-50698df12a4a",
+        "status":"FAILED",
+        "payment_amount":{
+          "value":1550000,
+          "currency":"INR"
+        },
+        "payment_method":"CREDIT_EMI",
+        "error_detail":{
+          "code":"INTERNAL_ERROR",
+          "message":"Payment processor is unavailable"
+        },
+        "created_at":"2025-01-24T05:53:24.476Z",
+        "updated_at":"2025-01-24T05:53:25.492Z"
+      }
+    ],
+    "created_at":"2025-01-24T05:53:07.740Z",
+    "updated_at":"2025-01-24T05:53:59.680Z",
+    "integration_mode":"SEAMLESS",
+    "payment_retries_remaining":8
+  }
+}
+Click here for request and response parameter information.
+Refer to our Cancel Order API documentation to learn more.
+

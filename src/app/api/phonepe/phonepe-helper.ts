@@ -1,7 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export function getPhonePeConfig() {
-  let clientId = process.env.NEXT_PUBLIC_PHONEPE_CLIENT_ID;
+  let clientId = process.env.PHONEPE_CLIENT_ID;
   let clientSecret = process.env.PHONEPE_CLIENT_SECRET;
   let clientVersion = process.env.NEXT_PUBLIC_PHONEPE_CLIENT_VERSION || "1";
   let peEnv = process.env.NEXT_PUBLIC_PHONEPE_ENV || "sandbox";
@@ -9,7 +9,7 @@ export function getPhonePeConfig() {
   try {
     const ctx = getCloudflareContext();
     if (ctx && ctx.env) {
-      clientId = clientId || (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_ID;
+      clientId = clientId || (ctx.env as any).PHONEPE_CLIENT_ID;
       clientSecret = clientSecret || (ctx.env as any).PHONEPE_CLIENT_SECRET;
       clientVersion = clientVersion || (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_VERSION || "1";
       peEnv = peEnv || (ctx.env as any).NEXT_PUBLIC_PHONEPE_ENV || "sandbox";

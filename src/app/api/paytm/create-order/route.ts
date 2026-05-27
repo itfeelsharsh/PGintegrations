@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;
 
+    console.log("Paytm configuration state - MID:", mid, "Merchant Key status:", merchantKey ? "Configured" : "Missing");
+
     if (!mid || !merchantKey) {
       return NextResponse.json(
         {
@@ -108,15 +110,17 @@ export async function POST(req: NextRequest) {
         { status: response.status }
       );
     }
-
     const resData: any = await response.json();
-    
+    console.log("Paytm initiateTransaction response data:", JSON.stringify(resData));
+
     // Check if Paytm returned a failure resultInfo in the body
     if (resData.body?.resultInfo?.resultStatus === "F") {
+      console.error("Paytm API failure details:", resData.body?.resultInfo?.resultMsg);
       return NextResponse.json(
         {
           error: resData.body.resultInfo.resultMsg || "Initiate Transaction failed.",
           code: "PAYTM_API_FAILED",
+          rawResponse: resData,
         },
         { status: 400 }
       );
@@ -124,7 +128,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       orderId: orderId,
-      txnToken: resData.body.txnToken,
+      txnToken: resData.body?.txnToken,
       amount: Number(amount).toFixed(2),
       mid: mid,
     });

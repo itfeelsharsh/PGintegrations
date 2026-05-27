@@ -665,8 +665,8 @@ function CheckoutContent() {
                 </>
               ) : isPhonepe ? (
                 <>
-                  <div>NEXT_PUBLIC_PHONEPE_CLIENT_ID=M22BPAMTMAVQU_2605271104</div>
-                  <div>PHONEPE_CLIENT_SECRET=ZmNiYTJiZDItYWMzYi00OGEzLWFhOTgtMzAxNDhkMWJkNDJi</div>
+                  <div>PHONEPE_CLIENT_ID=M22BPAMTMAVQU_xxxxxx</div>
+                  <div>PHONEPE_CLIENT_SECRET=xxxxxx</div>
                   <div>NEXT_PUBLIC_PHONEPE_CLIENT_VERSION=1</div>
                   <div>NEXT_PUBLIC_PHONEPE_ENV=sandbox</div>
                 </>

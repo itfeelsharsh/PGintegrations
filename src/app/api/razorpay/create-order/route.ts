@@ -62,7 +62,10 @@ export async function POST(req: NextRequest) {
     }
 
     const order = await razorpayResponse.json();
-    return NextResponse.json(order);
+    return NextResponse.json({
+      ...order,
+      keyId,
+    });
   } catch (error: any) {
     console.error("Exception in create-order API:", error);
     return NextResponse.json(

@@ -98,7 +98,7 @@ function CheckoutContent() {
         }
 
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          key: orderData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: orderData.amount,
           currency: orderData.currency,
           name: "Payment Gateway Integration",
@@ -200,8 +200,8 @@ function CheckoutContent() {
           return;
         }
 
-        const paytmMid = process.env.NEXT_PUBLIC_PAYTM_MID || orderData.mid;
-        const paytmEnv = process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+        const paytmMid = orderData.mid || process.env.NEXT_PUBLIC_PAYTM_MID;
+        const paytmEnv = orderData.env || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
         const host = paytmEnv === "staging" ? "securestage.paytmpayments.com" : "secure.paytmpayments.com";
         const scriptUrl = `https://${host}/merchantpgpui/checkoutjs/merchants/${paytmMid}.js`;
 
@@ -314,7 +314,7 @@ function CheckoutContent() {
           return;
         }
 
-        const payuEnv = process.env.NEXT_PUBLIC_PAYU_ENV || "test";
+        const payuEnv = orderData.env || process.env.NEXT_PUBLIC_PAYU_ENV || "test";
         const scriptUrl = payuEnv === "production" || payuEnv === "live"
           ? "https://jssdk.payu.in/bolt/bolt.min.js"
           : "https://jssdk-uat.payu.in/bolt/bolt.min.js";
@@ -501,7 +501,7 @@ function CheckoutContent() {
           return;
         }
 
-        const phonepeEnv = process.env.NEXT_PUBLIC_PHONEPE_ENV || orderData.env || "sandbox";
+        const phonepeEnv = orderData.env || process.env.NEXT_PUBLIC_PHONEPE_ENV || "sandbox";
         const scriptUrl = phonepeEnv === "production" || phonepeEnv === "live"
           ? "https://mercury.phonepe.com/web/bundle/checkout.js"
           : "https://mercury-stg.phonepe.com/web/bundle/checkout.js";

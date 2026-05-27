@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import PaytmChecksum from "paytmchecksum";
+import { PaytmChecksum } from "../paytm-helper";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     let mid = process.env.NEXT_PUBLIC_PAYTM_MID;
     let merchantKey = process.env.PAYTM_MERCHANT_KEY;
-    let website = process.env.NEXT_PUBLIC_PAYTM_WEBSITE || "WEBSTAGING";
+    let website = process.env.NEXT_PUBLIC_PAYTM_WEBSITE;
     let channelId = process.env.NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
     let paytmEnv = process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       if (ctx && ctx.env) {
         mid = mid || (ctx.env as any).NEXT_PUBLIC_PAYTM_MID;
         merchantKey = merchantKey || (ctx.env as any).PAYTM_MERCHANT_KEY;
-        website = website || (ctx.env as any).NEXT_PUBLIC_PAYTM_WEBSITE || "WEBSTAGING";
+        website = website || (ctx.env as any).NEXT_PUBLIC_PAYTM_WEBSITE;
         channelId = channelId || (ctx.env as any).NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
         paytmEnv = paytmEnv || (ctx.env as any).NEXT_PUBLIC_PAYTM_ENV || "staging";
       }
@@ -35,8 +35,21 @@ export async function POST(req: NextRequest) {
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;
+    if (website === "undefined" || website === "null") website = undefined;
+    if (paytmEnv === "undefined" || paytmEnv === "null") paytmEnv = "staging";
 
-    console.log("Paytm configuration state - MID:", mid, "Merchant Key status:", merchantKey ? "Configured" : "Missing");
+    // Clean credentials (trim whitespace and strip wrapping quotes)
+    if (mid) mid = mid.trim().replace(/^['"]|['"]$/g, '');
+    if (merchantKey) merchantKey = merchantKey.trim().replace(/^['"]|['"]$/g, '');
+    if (website) website = website.trim().replace(/^['"]|['"]$/g, '');
+    if (paytmEnv) paytmEnv = paytmEnv.trim().replace(/^['"]|['"]$/g, '');
+
+    // Set correct website name based on environment if not provided
+    if (!website) {
+      website = paytmEnv === "production" || paytmEnv === "live" ? "DEFAULT" : "WEBSTAGING";
+    }
+
+    console.log("Paytm configuration state - MID:", mid, "Merchant Key status:", merchantKey ? "Configured" : "Missing", "Environment:", paytmEnv, "Website:", website);
 
     if (!mid || !merchantKey) {
       return NextResponse.json(
@@ -131,6 +144,7 @@ export async function POST(req: NextRequest) {
       txnToken: resData.body?.txnToken,
       amount: Number(amount).toFixed(2),
       mid: mid,
+      env: paytmEnv,
     });
   } catch (error: any) {
     console.error("Exception in Paytm create-order API:", error);

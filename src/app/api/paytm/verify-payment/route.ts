@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import PaytmChecksum from "paytmchecksum";
+import { PaytmChecksum } from "../paytm-helper";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +31,12 @@ export async function POST(req: NextRequest) {
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;
+    if (paytmEnv === "undefined" || paytmEnv === "null") paytmEnv = "staging";
+
+    // Clean credentials (trim whitespace and strip wrapping quotes)
+    if (mid) mid = mid.trim().replace(/^['"]|['"]$/g, '');
+    if (merchantKey) merchantKey = merchantKey.trim().replace(/^['"]|['"]$/g, '');
+    if (paytmEnv) paytmEnv = paytmEnv.trim().replace(/^['"]|['"]$/g, '');
 
     if (!mid || !merchantKey) {
       return NextResponse.json(

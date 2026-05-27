@@ -109,7 +109,15 @@ export async function POST(req: NextRequest) {
     const firstName = nameParts[0] || "Customer";
     const lastName = nameParts.slice(1).join(" ") || "Customer";
 
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+    let apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!apiBaseUrl || apiBaseUrl.includes("localhost")) {
+      if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
+        apiBaseUrl = req.nextUrl.origin;
+      }
+    }
+    if (!apiBaseUrl) {
+      apiBaseUrl = "https://payments.itfeelsharsh.workers.dev";
+    }
 
     const orderPayload = {
       merchant_order_reference: txnid,

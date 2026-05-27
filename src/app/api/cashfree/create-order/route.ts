@@ -47,7 +47,15 @@ export async function POST(req: NextRequest) {
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const customerId = `cust_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+    let baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!baseUrl || baseUrl.includes("localhost")) {
+      if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
+        baseUrl = req.nextUrl.origin;
+      }
+    }
+    if (!baseUrl) {
+      baseUrl = "https://payments.itfeelsharsh.workers.dev";
+    }
     const returnUrl = `${baseUrl}/api/cashfree/callback?order_id={order_id}`;
 
     const host = cfEnv === "production" ? "api.cashfree.com" : "sandbox.cashfree.com";

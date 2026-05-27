@@ -139,7 +139,15 @@ async function handleCallback(req: NextRequest) {
     // Ignore if not in Cloudflare env
   }
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  let apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!apiBaseUrl || apiBaseUrl.includes("localhost")) {
+    if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
+      apiBaseUrl = req.nextUrl.origin;
+    }
+  }
+  if (!apiBaseUrl) {
+    apiBaseUrl = "https://payments.itfeelsharsh.workers.dev";
+  }
 
   // 1. If explicit failure parameter or query status is failed, redirect to failure page immediately
   if (queryStatus === "failed" || bodyStatus === "failed") {

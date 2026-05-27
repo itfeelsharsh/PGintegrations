@@ -85,7 +85,15 @@ export async function POST(req: NextRequest) {
 
     const hash = await generateSha512Hash(hashString);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+    let baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!baseUrl || baseUrl.includes("localhost")) {
+      if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
+        baseUrl = req.nextUrl.origin;
+      }
+    }
+    if (!baseUrl) {
+      baseUrl = "https://payments.itfeelsharsh.workers.dev";
+    }
     const surl = `${baseUrl}/api/payu/callback`;
     const furl = `${baseUrl}/api/payu/callback`;
 

@@ -6,6 +6,20 @@ import Link from "next/link";
 import Script from "next/script";
 import { GATEWAYS_CONFIG } from "@/app/gateways-config";
 
+const loadScript = (src: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const productName = searchParams.get("product") || "VoltGlide Obsidian Pro";
@@ -18,8 +32,8 @@ function CheckoutContent() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
+    name: "Narinder Gandhi",
+    email: "narinder.gandhi@yahoo.co.in",
     phone: "9876543210",
     address: "123, MG Road, Indiranagar",
     city: "Bengaluru",
@@ -84,6 +98,30 @@ function CheckoutContent() {
             email: formData.email,
             contact: formData.phone,
           },
+          config: {
+            display: {
+              blocks: {
+                all_methods: {
+                  name: "All Payment Methods",
+                  instruments: [
+                    { method: "upi" },
+                    { method: "card" },
+                    { method: "netbanking" },
+                    { method: "wallet" },
+                    { method: "emi" },
+                    { method: "cardless_emi" },
+                    { method: "paylater" },
+                    { method: "app" },
+                    { method: "bank_transfer" }
+                  ]
+                }
+              },
+              sequence: ["block.all_methods"],
+              preferences: {
+                show_default_blocks: true
+              }
+            }
+          },
           handler: async function (response: any) {
             setIsProcessing(true);
             try {
@@ -130,11 +168,224 @@ function CheckoutContent() {
         setErrorMessage(err.message || "An unexpected error occurred.");
         setIsProcessing(false);
       }
+    } else if (selectedGateway === "paytm") {
+      try {
+        const orderRes = await fetch("/api/paytm/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        const paytmMid = process.env.NEXT_PUBLIC_PAYTM_MID || orderData.mid;
+        const paytmEnv = process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+        const host = paytmEnv === "staging" ? "securestage.paytmpayments.com" : "secure.paytmpayments.com";
+        const scriptUrl = `https://${host}/merchantpgpui/checkoutjs/merchants/${paytmMid}.js`;
+
+        const scriptLoaded = await loadScript(scriptUrl);
+
+        if (!scriptLoaded || !(window as any).Paytm || !(window as any).Paytm.CheckoutJS) {
+          setPaymentStatus("failed");
+          setErrorMessage("Paytm JS SDK failed to load.");
+          setIsProcessing(false);
+          return;
+        }
+
+        const config = {
+          root: "",
+          flow: "DEFAULT",
+          data: {
+            orderId: orderData.orderId,
+            token: orderData.txnToken,
+            tokenType: "TXN_TOKEN",
+            amount: orderData.amount,
+          },
+          payMode: {
+            order: ['UPI', 'CARD', 'NB', 'BALANCE', 'EMI', 'PPBL', 'PDC']
+          },
+          handler: {
+            transactionStatus: async function (paymentStatus: any) {
+              console.log("Paytm transactionStatus callback:", paymentStatus);
+              setIsProcessing(true);
+              try {
+                const verifyRes = await fetch("/api/paytm/verify-payment", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orderId: paymentStatus.ORDERID,
+                  }),
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (verifyRes.ok && verifyData.verified) {
+                  setPaymentId(verifyData.txnId || paymentStatus.TXNID || orderData.orderId);
+                  setPaymentStatus("success");
+                } else {
+                  setPaymentStatus("failed");
+                  setErrorMessage(verifyData.error || "Verification failed.");
+                }
+              } catch (err: any) {
+                setPaymentStatus("failed");
+                setErrorMessage(err.message || "Verification request failed.");
+              } finally {
+                setIsProcessing(false);
+                if ((window as any).Paytm && (window as any).Paytm.CheckoutJS) {
+                  (window as any).Paytm.CheckoutJS.close();
+                }
+              }
+            },
+            notifyMerchant: function (eventName: string, data: any) {
+              console.log("Paytm notifyMerchant event:", eventName, data);
+              if (eventName === "MERCHANT_CLOSED" || eventName === "CLOSE") {
+                setIsProcessing(false);
+              }
+            },
+          },
+          merchant: {
+            mid: paytmMid,
+            redirect: false,
+          },
+        };
+
+        const checkout = (window as any).Paytm.CheckoutJS;
+        checkout.onLoad(function executeAfterCompleteLoad() {
+          checkout.init(config)
+            .then(function onSuccess() {
+              checkout.invoke();
+            })
+            .catch(function onError(error: any) {
+              console.error("Paytm CheckoutJS init error:", error);
+              setPaymentStatus("failed");
+              setErrorMessage(error.message || "Failed to initialize Paytm Checkout.");
+              setIsProcessing(false);
+            });
+        });
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
+    } else if (selectedGateway === "payu") {
+      try {
+        const orderRes = await fetch("/api/payu/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            productInfo: productName,
+            firstname: formData.name || "Customer",
+            email: formData.email || "customer@example.com",
+            phone: formData.phone || "9999999999",
+          }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok) {
+          if (orderData.code === "KEYS_MISSING") {
+            setPaymentStatus("keys_missing");
+          } else {
+            setPaymentStatus("failed");
+            setErrorMessage(orderData.error || "Order creation failed.");
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        const payuEnv = process.env.NEXT_PUBLIC_PAYU_ENV || "test";
+        const scriptUrl = payuEnv === "production" || payuEnv === "live"
+          ? "https://jssdk.payu.in/bolt/bolt.min.js"
+          : "https://jssdk-uat.payu.in/bolt/bolt.min.js";
+
+        const scriptLoaded = await loadScript(scriptUrl);
+
+        if (!scriptLoaded || !(window as any).bolt) {
+          setPaymentStatus("failed");
+          setErrorMessage("PayU Bolt JS SDK failed to load.");
+          setIsProcessing(false);
+          return;
+        }
+
+        (window as any).bolt.launch(
+          {
+            key: orderData.key,
+            txnid: orderData.txnid,
+            hash: orderData.hash,
+            amount: orderData.amount,
+            firstname: orderData.firstname,
+            email: orderData.email,
+            phone: orderData.phone,
+            productinfo: orderData.productinfo,
+            surl: orderData.surl,
+            furl: orderData.furl,
+          },
+          {
+            responseHandler: async function (BOLT: any) {
+              console.log("PayU Bolt response:", BOLT);
+              setIsProcessing(true);
+              
+              if (BOLT.response.txnStatus === "SUCCESS") {
+                try {
+                  const verifyRes = await fetch("/api/payu/verify-payment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      txnid: BOLT.response.txnid,
+                    }),
+                  });
+
+                  const verifyData = await verifyRes.json();
+
+                  if (verifyRes.ok && verifyData.verified) {
+                    setPaymentId(verifyData.mihpayid || BOLT.response.mihpayid || BOLT.response.txnid);
+                    setPaymentStatus("success");
+                  } else {
+                    setPaymentStatus("failed");
+                    setErrorMessage(verifyData.error || "Verification failed.");
+                  }
+                } catch (err: any) {
+                  setPaymentStatus("failed");
+                  setErrorMessage(err.message || "Verification request failed.");
+                } finally {
+                  setIsProcessing(false);
+                }
+              } else {
+                setPaymentStatus("failed");
+                setErrorMessage(BOLT.response.error_Message || "Payment failed or cancelled.");
+                setIsProcessing(false);
+              }
+            },
+            catchException: function (BOLT: any) {
+              console.error("PayU Bolt exception:", BOLT);
+              setPaymentStatus("failed");
+              setErrorMessage(BOLT.message || "An exception occurred during transaction.");
+              setIsProcessing(false);
+            },
+          }
+        );
+      } catch (err: any) {
+        setPaymentStatus("failed");
+        setErrorMessage(err.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      }
     } else {
       setTimeout(() => {
         setIsProcessing(false);
         alert(
-          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay is live.`
+          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, and PayU are live.`
         );
       }, 1000);
     }
@@ -153,46 +404,35 @@ function CheckoutContent() {
     {
       id: "razorpay",
       name: "Razorpay",
-      icon: "bi-shield-check text-primary",
       badge: "Integrated",
-      desc: "Live payment checkout modal via SDK.",
     },
     {
       id: "paytm",
       name: "Paytm PG",
-      icon: "bi-wallet2 text-secondary",
-      badge: "Mock",
-      desc: "UPI and Paytm Wallet flow simulation.",
+      badge: "Integrated",
     },
     {
       id: "payu",
       name: "PayU India",
-      icon: "bi-credit-card text-secondary",
-      badge: "Mock",
-      desc: "Card and Netbanking flow simulation.",
+      badge: "Integrated",
     },
     {
       id: "pinelabs",
       name: "PineLabs Plural",
-      icon: "bi-building-fill text-secondary",
       badge: "Mock",
-      desc: "Brand EMIs and PayLater simulation.",
     },
     {
       id: "cashfree",
       name: "Cashfree",
-      icon: "bi-activity text-secondary",
       badge: "Mock",
-      desc: "UPI and Card payment flow simulation.",
     },
     {
       id: "phonepe",
       name: "PhonePe PG",
-      icon: "bi-phone text-secondary",
       badge: "Mock",
-      desc: "Direct UPI intent flow simulation.",
     },
   ];
+
 
   if (paymentStatus === "success") {
     return (
@@ -410,19 +650,11 @@ function CheckoutContent() {
                             disabled={!isEnabled}
                             onChange={() => isEnabled && setSelectedGateway(gw.id)}
                           />
-                          <div className={`gateway-card border rounded p-3 h-100 d-flex flex-column justify-content-between gateway-card-inner bg-white ${!isEnabled ? "bg-light text-muted border-dashed" : ""}`} style={{ cursor: isEnabled ? "pointer" : "not-allowed" }}>
-                            <div>
-                              <div className="d-flex align-items-center justify-content-between mb-2">
-                                <div className="d-flex align-items-center">
-                                  <i className={`bi ${gw.icon} fs-5 me-2 ${!isEnabled ? "text-secondary" : ""}`}></i>
-                                  <h6 className="mb-0 fw-bold text-dark">{gw.name}</h6>
-                                </div>
-                                <span className={`badge ${!isEnabled ? "bg-light text-muted border" : gw.id === 'razorpay' ? 'bg-primary' : 'bg-light text-dark'} border small`}>
-                                  {isEnabled ? gw.badge : "Not Available"}
-                                </span>
-                              </div>
-                              <p className="text-muted small mb-0">{gw.desc}</p>
-                            </div>
+                          <div className={`gateway-card border rounded p-3 h-100 d-flex align-items-center justify-content-between gateway-card-inner bg-white ${!isEnabled ? "bg-light text-muted border-dashed" : ""}`} style={{ cursor: isEnabled ? "pointer" : "not-allowed" }}>
+                            <h6 className="mb-0 fw-bold text-dark">{gw.name}</h6>
+                            <span className={`badge ${!isEnabled ? "bg-light text-muted border" : gw.id === 'razorpay' ? 'bg-primary' : 'bg-light text-dark'} border small`}>
+                              {isEnabled ? gw.badge : "Under Implementation"}
+                            </span>
                           </div>
                         </label>
                       </div>

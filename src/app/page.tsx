@@ -113,12 +113,12 @@ export default function Home() {
         </p>
         <div className="row g-3">
           {[
-            { id: "razorpay", name: "Razorpay", desc: "Cards, Netbanking, UPI, Wallets", testUrl: "https://www.google.com/search?q=razorpay+test+card+details&oq=razorpay+test+card+details" },
-            { id: "paytm", name: "Paytm PG", desc: "All-in-One SDK, Paytm Wallet, Postpaid" },
-            { id: "payu", name: "PayU India", desc: "Enterprise Grade Routing, Instant Settlement" },
-            { id: "pinelabs", name: "PineLabs Plural", desc: "Plural gateway, Brand EMI, PayLater" },
-            { id: "cashfree", name: "Cashfree", desc: "Auto-collect, Payouts, Cardless EMI" },
-            { id: "phonepe", name: "PhonePe PG", desc: "UPI deep linking, Cards, Safe & Fast" }
+            { id: "razorpay", name: "Razorpay", testUrl: "https://www.google.com/search?q=razorpay+test+card+details" },
+            { id: "paytm", name: "Paytm PG", testUrl: "https://www.google.com/search?q=paytm+test+card+details" },
+            { id: "payu", name: "PayU India", testUrl: "https://www.google.com/search?q=payu+india+test+card+details" },
+            { id: "pinelabs", name: "PineLabs Plural", testUrl: "https://www.google.com/search?q=pinelabs+plural+test+card+details" },
+            { id: "cashfree", name: "Cashfree", testUrl: "https://www.google.com/search?q=cashfree+test+card+details" },
+            { id: "phonepe", name: "PhonePe PG", testUrl: "https://www.google.com/search?q=phonepe+test+upi+ids" }
           ].map((gateway) => {
             const config = GATEWAYS_CONFIG[gateway.id as keyof typeof GATEWAYS_CONFIG];
             const isEnabled = config?.enabled ?? false;
@@ -134,10 +134,9 @@ export default function Home() {
                           <h5 className="card-title mb-0 fw-bold">{gateway.name}</h5>
                         </div>
                         <span className={`badge ${isEnabled ? "bg-success" : "bg-light text-muted border"} small`}>
-                          {isEnabled ? "Available" : "Not Available"}
+                          {isEnabled ? "Available" : "Under Implementation"}
                         </span>
                       </div>
-                      <p className="card-text text-muted small">{gateway.desc}</p>
                     </div>
                     {gateway.testUrl && (
                       <div className="mt-3">
@@ -147,7 +146,7 @@ export default function Home() {
                           rel="noopener noreferrer"
                           className="btn btn-sm btn-outline-dark w-100 py-1"
                         >
-                          Official Test Details <i className="bi bi-box-arrow-up-right ms-1"></i>
+                          Test Cards/UPI ids <i className="bi bi-box-arrow-up-right ms-1"></i>
                         </a>
                       </div>
                     )}

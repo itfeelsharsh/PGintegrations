@@ -1,0 +1,1807 @@
+JS Checkout Introduction
+Payment at Blink Speed
+A PCI-DSS compliant, device-first checkout experience that maximises conversions — deployed with just a few lines of code.
+
+ 
+
+2
+
+steps to integrate
+
+All
+
+payment options supported
+
+100%
+
+PCI DSS compliant
+
+ 
+Built to GROW your business
+
+ 
+
+Every feature is designed to reduce drop-off, boost conversions, and give your customers a frictionless payment experience.
+
+ 
+
+ 
+
+Intelligent Routing for Higher Success Rates
+
+JS Checkout's smart payment routing and automatic retry mechanisms ensure the highest possible transaction success rate — every order has the best possible chance of completing first time
+
+ 
+Device-First Experience
+
+The checkout UI adapts intelligently — expansive and confidence-inspiring on desktop, tight and focused on mobile. No compromises on either platform.
+
+ 
+Zero Redirection
+
+Customers complete payment right on your cart page. No external redirects means no lost customers, no broken journeys.
+
+ 
+Your Brand, Front & Centre
+
+Your logo, name and context are prominently anchored in the checkout UI — customers always know they're buying from you.
+
+ 
+Integrate in Just 2 Steps
+
+Pre-built code snippets mean you can go from zero to live in minutes, not weeks. Minimal coding. Maximum impact.
+
+ 
+
+Every Way Your Customer Wants to Pay
+
+ 
+
+Accept all major Indian payment methods out of the box. No additional setup — just activate and go.
+
+ 
+
+
+
+
+ 
+
+ Enterprise Features, Ready Out of the Box
+
+ 
+
+JS Checkout ships with powerful controls that give your business full flexibility over how payments work.
+
+
+
+
+ Best in class journey, Delightful UX
+
+ 
+
+Mobile	Desktop
+ 
+
+ 
+
+How It Works
+
+
+Initiate Payment
+This step involves one API integration (Initiate Transaction API) from merchant’s server side.
+
+ 
+
+It is a backend, server-to-server (S2S) integration step where the merchant’s server sends a request to the Paytm PG server via the Initiate Transaction API. 
+
+ 
+
+ POST   Initiate Transaction API
+This is the first API that the merchant needs to call to initiate the transaction. Initiate Transaction API must be initiated from the merchant’s server at any point of time before invoking the JS code. Mostly, merchants call this API when a customer reaches the cart / order page.
+
+This API is required to initiate the transaction at merchant’s end. In response, Paytm PG returns the token in a key called txnToken. This token is later used to invoke the JS code that renders the checkout page. 
+
+ CAUTION
+ 
+
+This API call needs to send a checksum value in the request header.
+
+ 
+
+    REQUEST
+URL: https://securestage.paytmpayments.com/theia/api/v1/initiateTransaction?mid={mid}&orderId={order-id}
+
+ 
+
+Sample Request
+
+cURL
+JAVA
+Node.js
+PHP
+Python
+Dot NET
+curl -X POST 'https://securestage.paytmpayments.com/theia/api/v1/initiateTransaction?mid={mid}&orderId=ORDERID_98765' \
+--header 'Content-Type: application/json' \
+--data '{"body":{"requestType":"Payment","mid":"{mid}","websiteName":"{websiteName}","orderId":"ORDERID_98765","txnAmount":{"value":"1.00","currency":"INR"},"userInfo":{"custId":"CUST_001"},"callbackUrl":"https://<callback URL to be used by merchant>"},"head":{"signature":"{signature}"}}'  
+ 
+
+Request Attributes
+
+ 
+
+Content Type : JSON
+
+ 
+
+Head
+
+
+
+
+
+
+Body
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+ 
+
+    RESPONSE
+Sample Response
+
+{
+    "head": {
+        "responseTimestamp": "1526969112101",
+        "version": "v1",
+        "clientId": "C11",
+        "signature": "TXBw50YPUKIgJd8gR8RpZuOMZ+csvCT7i0/YXmG//J8+BpFdY5goPBiLAkCzKlCkOvAQip/Op5aD6Vs+cNUTjFmC55JBxvp7WunZ45Ke2q0="
+    },
+    "body": {
+        "resultInfo": {
+            "resultStatus": "S",
+            "resultCode": "0000",
+            "resultMsg": "Success"
+        },
+        "txnToken": "fe795335ed3049c78a57271075f2199e1526969112097",
+        "isPromoCodeValid": false,
+        "authenticated": false
+    }
+}
+ 
+
+Response Attributes
+
+ 
+
+Content Type : JSON
+ 
+
+Head
+Attribute	Data Type	Description	Possible Values
+responseTimestamp	String	EPOCH timestamp at which response is sent.
+Example: 1588402269	         --
+version 	String	Version of the API.
+Example: v1	         --
+clientId	String	Paytm uses the Merchant Key on the basis of clientId parameter value. It requires only if the merchant has more than one key.	         --
+signature	String	You should validate the parameter values by verifying the signature comes in the response. It ensures that parameter values not tempered. Signature string can be verified by using Paytm checksum library.	          --
+Body
+Attribute	Data Type	Description	Possible Values
+resultInfo
+
+ 
+
+ 
+
+   resultCode
+
+ 
+
+
+    resultStatus     
+
+ 
+
+ 
+
+   resultMsg
+
+ 
+
+ 
+
+ 
+
+   isRedirect
+
+ 
+
+ 
+
+   bankRetry
+
+ 
+
+    retry
+
+Object
+
+ 
+
+ 
+
+String
+
+ 
+
+ 
+
+ 
+
+String
+
+ 
+
+ 
+
+String
+
+ 
+
+ 
+
+ 
+
+Boolean
+
+ 
+
+ 
+
+Boolean
+
+ 
+
+Boolean
+
+ 
+
+Gives the information about the result of the API response.
+
+ 
+
+ 
+
+This is the resultCode corresponding to a particular message and is returned to the merchant. The maximum length is 64. The different result codes corresponding to this API are mentioned below.
+
+ 
+
+This parameter indicates the status of API call. 
+ 
+
+This parameter is the result message which contains information about the result.The different result messages corresponding to this API are mentioned below.
+
+ 
+
+This flag indicates that number of retries are over and user is to be redirected from cashier page.
+
+ 
+
+This flag indicates that retry is allowed at bank's end or not.
+
+ 
+
+This flag indicates that retry is allowed at bank's end or not.
+
+ 
+
+        --
+
+ 
+
+ 
+
+        --
+
+ 
+
+ 
+
+    S, F, U
+
+ 
+
+         --
+
+ 
+
+ 
+
+         --
+
+ 
+
+ 
+
+ 
+
+         --
+
+ 
+
+         --
+
+txnToken	String	
+Unique transaction token received in the response of Initiate Transaction API. It is valid for 15 minutes.
+
+Example: f0bed899539742309eebd8XXXX7edcf61588842333227
+
+        --
+authenticated	Boolean	True when ssoToken is provided in request and it is valid	        --
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Response Codes & Messages
+
+List of Codes
+Response Code	Status	Description
+0000	Success 	Success
+0002	Success	Success Idempotent
+196	Failed	Payment failed as the amount entered exceeded the allowed limit. Please enter a lower amount and try again or reach out to the merchant for further assistance.
+1001	Failed	Request parameters are not valid
+1006	Failed	Your Session has expired
+1007	Failed	Missing mandatory element
+1008	Failed	Pipe character is not allowed
+1009	Failed	Promo code request is not valid
+1011	Failed	Invalid Promo Param
+1012	Failed	Promo amount cannot be more than transaction amount.
+2004	Failed	SSO Token is invalid
+2005	Failed	Checksum provided is invalid
+2007	Failed	Txn amount is invalid
+2013	Failed	MID in the query param doesn’t match with the Mid sent in the request
+2014	Failed	OrderId in the query param doesn’t match with the OrderId sent in the request
+2023	Failed	Repeat Request Inconsistent
+2100	Failed	Link details are not valid.
+00000900	Failed	System error
+ 
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+Invoke Payment Page
+This step involves one frontend integration (Add JS Code Snippet) from merchant’s server side.
+
+ 
+Add JS Code Snippet 
+JS Code Snippet is used to initialize and invoke the JS module.
+
+ 
+
+The JS code snippet must be integrated in the page where the checkout page will be invoked. Mostly, this is the order page where your website needs to make the payment to confirm their order. When the JS module is invoked, an iframe gets rendered on the merchant’s checkout page from where the customers can complete the payment.
+
+ NOTE
+ 
+
+Host Details are different for Staging and Production. Please configure accordingly.
+
+Staging: https://securestage.paytmpayments.com
+
+Production: https://secure.paytmpayments.com
+
+ 
+
+You need to add the following Paytm’s JS script to your code.
+
+ 
+
+    JS CODE
+<script type="application/javascript" src="{HOST}/merchantpgpui/checkoutjs/merchants/{MID}.js" onload="onScriptLoad();" crossorigin="anonymous"></script>
+<script>
+function onScriptLoad(){
+var config = {
+"root": "",
+"flow": "DEFAULT",
+"data": {
+"orderId": "", /* update order id */
+"token": "", /* update token value */
+"tokenType": "TXN_TOKEN",
+"amount": "" /* update amount */
+},
+"handler": {
+"notifyMerchant": function(eventName,data){
+console.log("notifyMerchant handler function called");
+console.log("eventName => ",eventName);
+console.log("data => ",data);
+}
+}
+};
+if(window.Paytm && window.Paytm.CheckoutJS){
+window.Paytm.CheckoutJS.onLoad(function excecuteAfterCompleteLoad() {
+// initialze configuration using init method
+window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
+// after successfully updating configuration, invoke JS Checkout
+window.Paytm.CheckoutJS.invoke();
+}).catch(function onError(error){
+console.log("error => ",error);
+});
+});
+}
+}
+</script>
+ 
+
+ NOTE
+ 
+
+You need to configure this HTML code for mobile and handheld devices to make the checkout page dynamically responsive. To do this, add the below line of code in your html code.
+
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0"/>
+ 
+
+ NOTE
+ 
+
+First, you need to call Initiate Transaction API which will return a transaction token. Pass the transaction token obtained in the function as above.
+
+ 
+
+ NOTE
+ 
+
+UPI Intent (Webview): To enable UPI Intent on Web view (mobile app) for Android and iOS, you need to perform additional integration. To know more, please refer to Integration with JS Checkout for Android (Webview) and Integration with JS Checkout for iOS (Webview).
+UPI Intent on Mweb view (mobile web browser) is already supported on Android and iOS for JS Checkout. There's no additional integration required in this case.
+
+ 
+
+ 
+
+Attribute Details
+
+
+
+
+
+
+
+
+ 
+
+ 
+
+CAUTION
+Please make sure that the script is loaded in the head section of your HTML page so that it gets loaded before the function is called.
+If you are using Firefox Mozilla for integrating Paytm JS Checkout in asp.net C# application, the payment popup window might not open and it might give the following error in Mozilla console: Uncaught TypeError: window.Paytm.CheckoutJS.init is not a function. In such cases, please once clear your browser cache and cookies. If the issue still persists please raise a query on Paytm Developer Support
+ 
+
+
+Sample Projects for JS Code Implementation
+ 
+
+You can refer to the following sample projects for your preferred framework. These sample projects allow you to understand the implementation of the JS code better.
+
+Vue: https://github.com/paytm/paytm-blink-checkout-vue
+Angular - https://github.com/paytm/paytm-blink-checkout-angular
+React - https://github.com/paytm/paytm-blink-checkout-react
+ 
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+© 2026, Paytm Payments Services LimitedVerify Payment Status
+This step involves one validation (Receive & Validate Callback Response) and one API integration (Transaction Status API).
+
+
+To update the transaction status, Paytm PG uses Callback URL as a default option to send the response of the transaction. However, it is highly recommended to integrate Transaction Status API or Webhook and fetch the final payment status before confirming your customer’s order.
+
+ 
+
+Receive & Validate Callback Response
+When the payment is successful, you receive the transaction status from Paytm PG on the Callback URL.
+
+ TIP
+ 
+
+You can manage callback in the same page instead of redirecting to another page by passing parameter, redirect=false in JS Checkout config. Consequently, you get the payment response inside transactionStatus handler in JS Checkout. This is where you can manage the callback.
+
+ 
+
+The signature in this response needs to be validated via Checksum library. The implementation is similar to the Initiate Payment step.
+
+ CAUTION
+ 
+
+Failure to validate the checksum may result in fraudulent transactions.
+
+ 
+ POST   Transaction Status API
+This API is used to verify transaction status before confirming customer’s order.
+
+Paytm PG strongly recommends the merchants to integrate this Transaction Status API that can be used to fetch the final transaction status corresponding to requested OrderId. Following are the transaction statuses:
+
+Success
+Failed
+Pending
+This API gets the transaction status corresponding to requested OrderId for specific merchant.
+
+ 
+
+    REQUEST
+Sample Request
+
+cURL
+JAVA
+Node.js
+PHP
+Python
+Dot NET
+curl -X POST 'https://securestage.paytmpayments.com/v3/order/status' \
+--header 'Content-Type: application/json' \
+--data '{"body":{"mid":"{mid}","orderId":"{order-id}"},"head":{"signature":"{signature}"}}'
+ 
+
+Request Attributes
+
+ 
+
+Content Type : JSON
+
+Head
+
+
+
+
+
+
+Body
+
+
+
+ 
+
+ 
+
+    RESPONSE
+Sample Response
+
+{
+    "head": {
+        "responseTimestamp": "1553496322922",
+        "version": "v1",
+        "clientId": "C11",
+        "signature": "xxxxx"
+    },
+    "body": {
+        "resultInfo": {
+            "resultStatus": "TXN_SUCCESS",
+            "resultCode": "01",
+            "resultMsg": "Txn Success"
+        },
+        "txnId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "bankTxnId": "xxxxxxxxxxxxxxx",
+        "orderId": "xxxxxxx",
+        "txnAmount": "100.00",
+        "txnType": "SALE",
+        "gatewayName": "HDFC",
+        "bankName": "HSBC",
+        "mid": "xxxxxxxxxxxxxxxxxxxx",
+        "paymentMode": "CC",
+        "refundAmt": "100.00",
+        "txnDate": "2019-02-20 12:35:20.0",
+        "authRefId": "50112883"
+    }
+}        
+ 
+
+Response Attributes
+
+ 
+
+Content Type : JSON
+
+Head
+
+
+
+
+
+
+
+Body
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+ 
+
+Response Codes & Messages
+
+ 
+
+Please refer to the Transaction Status Codes to learn more about the Transaction Statuses and their codes.
+
+ 
+ 
+Configure Webhook
+Instead of using the Transaction Status API, alternatively you can configure Webhook to get the final transaction status. You can configure the webhook for Payment Status in most of the usecases from the merchant dashboard.
+
+ 
+
+ NOTE
+ 
+
+Webhooks are the user specified HTTP callbacks that get triggered by some event and are used to connect two applications. It is a way Paytm PG server to send notification on the final status of transaction, refund, etc. to a publicly accessible web URL of the merchant. Unlike the Transaction Status API where you need to poll the data frequently to get the real time status, Webhook sends you the transaction status in real time and automated manner.
+
+ 
+
+To consume a webhook, you must configure a publicly accessible web URL from your Paytm dashboard. This URL should be capable of handling the updated event/response sent by Paytm PG.
+
+ 
+
+
+
+ 
+
+Paytm sends a server to server (S2S) response in key value pairs on the webhook configured and on callback URL. Payment Success Webhook response is sent for the final transaction status i.e. success or failed.
+
+ 
+
+To know more about the webhook response, please refer to the Payment Status.
+
+ 
+
+ 
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+© 2026, Paytm Payments Services LimitedTest Integration & Go Live
+Test Your Integration
+ 
+
+Once the integration is complete, you need to test it on the staging environment using the staging credentials available at API Keys section of the Merchant Dashboard and using the test payment option credentials listed here.
+
+When the test transaction is complete, you can move your code to Live or Production environment with production account details. This implies that you have successfully integrated the Paytm Payment Gateway to your website.
+
+ 
+
+Go Live on Production
+ 
+
+Replace your test credentials with production credentials.
+
+Merchant ID (mid) from Test MID to Production MID
+Merchant key (key) from Test Merchant Key to Production Merchant Key
+Website name parameter (websiteName) from WEBSTAGING to DEFAULT 
+Production URL endpoints for Initiate Transaction API & Transaction Status API
+ NOTE
+ 
+
+Host Details are different for Staging and Production. Please configure accordingly.
+
+Staging: https://securestage.paytmpayments.com
+Production: https://secure.paytmpayments.com
+ 
+
+The production account details are available only when you activate your account on the dashboard.
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+© 2026, Paytm Payments Services LimitedAppendix A: Customization via Code
+ 
+By using the configuration you can change the following:
+
+Header
+Footer
+Theme
+Brand Logo
+Payment Option ordering/filtering
+let defaultMerchantConfiguration = {
+    "root": "",
+    "style": {
+        "bodyColor": "",
+        "themeBackgroundColor": "",
+        "themeColor": "",
+        "headerBackgroundColor": "",
+        "headerColor": "",
+        "errorColor": "",
+        "successColor": ""
+    },
+    "flow": "DEFAULT",
+    "data": {
+        "orderId": "",
+        "token": "",
+        "tokenType": "TXN_TOKEN",
+        "amount": "",
+        "userDetail": {
+            "mobileNumber": "",
+            "name": ""
+        }
+    },
+    "merchant": {
+        "mid": "",
+        "name": "",
+        "redirect": true
+    },
+    "labels": "DEFAULT",
+    "payMode": {
+        "labels": {},
+        "filter": [],
+        "order": []
+    },
+    "handler": {}
+};
+ 
+
+Configuration Details 
+ 
+
+You can make the configuration on the runtime as per the window.Paytm.CheckoutJS.init.
+
+Following are the details for customization parameters:
+
+ 
+
+Attribute	Purpose	Type	Default	Example
+root	The DOM element to be mounted on initialization. It can be a CSS selector string or an actual HTMLElement.	String | HTMLElement	#paytm-checkoutjs	
+window.Paytm.CheckoutJS.init({
+  // using CSS selector string
+  root:"#checkout-hook",       
+
+  // using HTMLElement
+  root:document.querySelector(".checkout-class") 
+});
+ 
+
+flow	Type of JS Checkout integration. It will be  DEFAULT.	String	DEFAULT	
+window.Paytm.CheckoutJS.init({  
+  flow:"DEFAULT"       
+});
+ 
+
+labels	Change the label text of paymodes	Object	{}	
+window.Paytm.CheckoutJS.init({
+  payMode:{
+    "labels": {
+      "UPI":"Bhim UPI"
+    }    
+  } 
+});
+ 
+
+ 
+
+style: 
+
+ 
+
+Description: Style the layout of the payment page. Merchant can customize the header, body and theme of the page.
+Type: Object
+Default: {}
+
+NOTE
+ 
+
+Color code should be in hexadecimal values.
+
+ 
+
+Attribute	Purpose	Type	Example
+themeBackgroundColor	Primary color of the theme i.e. background color of HTML elements such as button, radio button and checkbox.	String	
+window.Paytm.CheckoutJS.init({
+  style:{
+    "themeBackgroundColor":"#33cc33",    
+  }
+});
+ 
+
+themeColor	Secondary color of the theme i.e. text color of HTML elements such as button, radio button & checkbox	String	
+window.Paytm.CheckoutJS.init({
+  style:{
+    "themeColor":"#33cc80"    
+  }
+});
+ 
+
+headerBackgroundColor	Primary/background color of header and footer.	String	
+window.Paytm.CheckoutJS.init({
+  style:{
+    "headerBackgroundColor":"#3333cc"    
+  }
+});
+ 
+
+headerColor	Secondary color of the header and footer i.e. text color of content in header and footer.	String	
+window.Paytm.CheckoutJS.init({
+  style:{
+    "headerColor":"#5933cc"    
+  }
+});
+ 
+
+ 
+
+data:
+
+ 
+
+Description: Configure transaction-related data of each request.
+
+Type: Object
+
+window.Paytm.CheckoutJS.init({
+  "data": {
+    "orderId": "", /* update order id */
+    "token": "",   /* update token value */
+    "tokenType": "TXN_TOKEN",
+    "amount": ""   /* update amount */
+  },
+
+  handler: {
+    "notifyMerchant": function (eventName, data) {
+      console.log("notifyMerchant handler function called");
+      console.log("eventName => ", eventName);
+      console.log("data => ", data);
+    }
+  }
+});
+ 
+
+NOTE
+ 
+
+orderId, amount,token, and tokenType are mandatory fields on the data object.
+
+ 
+
+Attribute	Purpose	Type	Note	Example
+orderId	Order ID	String(50)	Special Characters allowed in Order ID are: “@” “-” “_” “.”	
+window.Paytm.CheckoutJS.init({
+  data:{
+    "orderId":"ORDER_ID_12345"        
+  }
+});
+ 
+
+amount	Transaction amount	String | Number	
+Must contain upto two decimal points. The amount should not include any separator like (“,”)
+
+window.Paytm.CheckoutJS.init({
+  data:{
+    "amount":"4594"        
+  }
+});
+ 
+
+token	Transaction token received from calling Initiate Transaction API.	String	If token is present then tokenType field is mandatory	
+window.Paytm.CheckoutJS.init({
+  data:{
+    "tokenType":"TXN_TOKEN",
+    "token":"<Alpha-numeric string>"        
+  }
+});
+ 
+
+tokenType	
+Type of token for doing transaction
+
+ 
+
+String	
+Token field is a prerequisite.
+For JS Checkout tokenType will be TXN_TOKEN
+
+window.Paytm.CheckoutJS.init({
+  data:{
+    "orderId":"ORDER_ID_12345",
+    "amount":"4594",
+    "tokenType":"TXN_TOKEN",
+    "token":"<Alpha-numeric string>"    
+  }
+});
+ 
+
+merchant:
+
+ 
+
+Description: Configure merchant related properties
+
+Type: Object
+
+ 
+
+Attribute	Purpose	Type	Default Values	Example
+name	Change merchant name	String	 	
+window.Paytm.CheckoutJS.init({
+  merchant:{
+    name: 'Merchant name'
+  }
+});
+ 
+
+redirect	Handling of payment response after successful transaction	Boolean	
+True
+
+
+Note: If redirect field is false then transactionStatus callback in part of configuration is mandatory.	
+window.Paytm.CheckoutJS.init({
+  merchant:{
+    redirect: false
+  },
+  handler:{ 
+      transactionStatus:function(data){
+        console.log("payment status ", data);  
+      } 
+    }
+});
+ 
+
+ 
+
+ 
+
+payMode:
+
+ 
+
+Description: List of supported payment options. Customize order, filter and labels for payment options render on the page using payMode's value.
+
+Type: Object
+
+ 
+
+Key	Value
+Paytm Wallet	BALANCE
+Paytm Payment Bank	PPBL
+Paytm Postpaid	PDC
+Credit/Debit Card	CARD
+EMI	EMI
+Net Banking	NB
+UPI	UPI
+ 
+
+ 
+
+Attribute	Purpose	Type	Default Values	Example
+order	Reorder payment option as per their priority defined	Array	[ ]	
+window.Paytm.CheckoutJS.init({
+  payMode:{
+    "order": ['UPI','CARD']
+  } 
+});
+ 
+
+filter	Filter payment options fetch from backend APIs	 	 	 
+exclude	Remove payment option from the server response	Array	[ ]	
+window.Paytm.CheckoutJS.init({
+  payMode:{
+    "filter": {
+        "exclude": ['UPI']
+    }
+  } 
+});
+ 
+
+handler:
+
+ 
+
+Description: Callback handler for communicating with merchant page and notify about the state of payment
+
+Type: Object
+
+Attribute	Purpose	Type	Default Values	Example
+transactionStatus	It is used to provide information to the merchant about the payment status.	Object	
+Null
+
+Note: This callback is mandatory if merchant.redirect is false
+
+ 
+
+window.Paytm.CheckoutJS.init({
+  handler:{
+    transactionStatus:function transactionStatus(paymentStatus){
+      console.log("paymentStatus => ",paymentStatus);              
+    } 
+  }
+});
+ 
+
+notifyMerchant	It is used to provide information to the merchant about the state of the payment page ( invalid token, session expire, cancel transaction etc.)	eventName: String , data:<Any-JS-Type></code>	
+Null
+
+Note: This callback is mandatory.
+
+ 
+
+window.Paytm.CheckoutJS.init({
+  handler:{
+    notifyMerchant:function notifyMerchant(eventName,data){
+      console.log("notify merchant about the payment state");
+    } 
+  }
+});
+ 
+
+ 
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+© 2026, Paytm Payments Services LimitedAppendix B: Recommended Integrations with JS Checkout
+ 
+
+JS Checkout can be integrated with other solutions offered by Paytm. Some of them are as below:
+
+ 
+
+Bank Offers: Bank offers on JS Checkout can be integrated with minimal effort at merchant’s end. Merchant needs to just pass an object in the Initiate Transaction API. To know more, please refer Bank Offers integration with JS Checkout.
+EMI Subvention: EMI subvention on JS Checkout can be integrated with minimal effort at the merchant side. Merchant needs to pass the relevant object in the Initiate Transaction API and invoke the JS module through a transaction token. To know more, please refer EMI Subvention integration with JS Checkout.
+Subscription Activation: Subscription activation can be done through JS Checkout. With this integration, you can collect subsequent payments or cancel the subscription plan respectively. To know more, please refer, Subscription Activation integration with JS Checkout.
+UPI Intent (Webview): To enable UPI Intent on Web view (mobile app) for Android and iOS, you need to perform additional integration. To know more, please refer to Integration with JS Checkout for Android (Webview) and Integration with JS Checkout for iOS (Webview).
+ 
+
+ Note: UPI Intent on Mweb view (mobile web browser) is already supported on Android and iOS for JS Checkout. There's no additional integration required in this case.
+
+Feedbackarrow
+Terms of ServicePrivacy Policy
+© 2026, Paytm Payments Services Limited

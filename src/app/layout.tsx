@@ -22,7 +22,7 @@ export default function RootLayout({
             <div className="container">
               <a className="navbar-brand d-flex align-items-center" href="/">
                 <i className="bi bi-wallet2 me-2 text-warning fs-4"></i>
-                <strong className="tracking-wide">Payment Gateway Integrations</strong>
+                <strong className="tracking-wide">Payment Gateway Integrations Playground</strong>
               </a>
               <button
                 className="navbar-toggler"

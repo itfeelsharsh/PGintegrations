@@ -1,0 +1,481 @@
+Node JS SDK
+The PayU SDK for NodeJS lets you to easily work with PayU APIs by integrating this SDK within your base system. With NodeJS SDK, you do not need to worry about low-level details for API integration and with a few lines of code and a function call, get started within a few minutes. To install NodeJS Web SDK, refer to Install NodeJS Web SDK.
+
+Features Supported
+The following features are supported in the NodeJS SDK:
+
+Create a Payment form.
+Verify the transaction or check the transaction status.
+Initiate/cancel refunds and check the status of a refund.
+Retrieve settlement details that the bank has to settle you.
+Get information on eligible payment options and PG/BANK downtime details.
+Check the customer’s eligibility for EMI and get the amount according to the EMI interest.
+Create/Expire invoice link through the function.
+Steps to Integrate
+Before you start with the integration, enable the payment methods that you want to offer to your customers from Dashboard > Settings > Payment methods. We enable Cards, UPI, and other payment methods by default, and we recommend that you enable other payment methods that are relevant to you.
+
+Create a PayU account
+First, create a PayU account. See Register for a merchant account.
+
+🚧
+Download NodeJS SDK
+You can download the NodeJS Web SDK from the following GitHub link: https://github.com/payu-intrepos/web-sdk-nodejs
+
+Install the SDK
+Run the following command to install the PayU NodeJS SDK using the NPM:
+
+npm
+
+npm install payu-websdk
+Build the PayU Object
+Use the sample code snippet to build an instance of PayU Object:
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+Initiate the payment
+This method genereates an auto-submit HTML form to intitiate the transaction.
+
+Create a JSON with the payment parameters and pass it as the argument of the paymentInitiate method of the payuClient object
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.paymentInitiate(<JSON>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Verify the payment
+You must implement this method to verify the status of the payment once the payment is done. Pass the txnID as the aggument of the verifyPayment method of the payuClient object.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.verifyPayment(<txnID>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get transaction details
+The get_Transaction_Details method takes the START_DATE and END_DATE, and returns the details of all transaction happened during that period. The output consists of the status of the API (success or failed) and all the transaction details in an array format.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getTransactionDetails(<START_DATE>,<END_DATE>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get settlement details
+You can use this method to retrieve settlement details which the bank has to settle for you. Pass either the date for which you want to get all the settlement details or the UTR ((Unique Transaction Reference number-alphanumeric))number of the transaction as the argument of the getSettlementDetails method.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getSettlementDetails(<date/UTR nunmber>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get net banking status
+The Get Net Banking Status API (getNetbankingStatus) is used to help you in handling the NetBanking Downtime. A few times, one or more Net Banking options may be facing downtime due to issues observed at the bank's end. This API is used to tell the status of one or all the Net Banking options. The status can be either up or down. If you want to know the status of a specific Net Banking option, the input parameter should contain the corresponding ibibo_code. If you want to know the status of all the Net Banking options, the input parameter should contain the value as default.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getNetbankingStatus(<bankcode>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get issuing bank status
+The Get Issuing Bank Status API (getIssuingBankStatus) is used to help you handle the credit card or debit card issuing bank downtime.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getIssuingBankStatus(<bin>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get checkout details
+The get_checkout_details API is a generic API using which they can get information when you create the custom checkout-pages, that will contain the payment options, offers, recommendations, and downtime details. The API provides the following details:
+
+Payment option details: The extended details for each payment option available for the merchant.
+Additional charges: The additional charges configured for all payment options.
+eligibility details
+Downtime details: The downtime status of the payment options.
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getCheckoutDetails(<JSON>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get emi amount according to interest
+The Get EMI Amount According to Interest API (getEmiAmountAccordingToInterest) is used to get the EMI interest bank rates for all the enabled EMIs.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.getEmiAmountAccordingToInterest(<amount>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Create an invoice
+The Create Invoice API (create_invoice) allows you to create an email invoice for your customer and provides an option to send the email invoice to the customer either immediately or later through automation.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.createInvoice(<JSON>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Expire an invoice
+The Expire Invoice API (expire_invoice) is used to expire an invoice link corresponding to the txnID. In few cases, an invoice might be sent to an incorrect email ID by the merchant. In such scenario, you can discard that invoice by expiring it.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.expireInvoice(<txnID>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Get elligible bins for EMI
+The Eligible Bin for EMI API (eligibleBinsForEMI) is used only when the merchant needs the EMI feature of PayU. If you are managing card details on your website, this API can tell the issuing bank of the card bin. It also provides the minimum eligible amount for a particular bank.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.eligibleBinsForEMI(<bin>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Check bin type
+The checkIsDomestic method is used to detect whether a particular BIN number is international or domestic. It is also useful to determine:
+
+card's issuing bank
+card type such as, Visa, Master, etc.
+card category such as Credit/Debit, etc.
+var1 is bin number which is the first 6 digits of a Credit/Debit card.
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.checkIsDomestic(<bin>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Check action status
+The Check Action Status API (check_action_status) is used to check the status of the refund or cancel requests.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.checkActionStatus(<request_id>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Cancel refund transactions
+The Cancel Refund Transaction API (cancel_refund_transaction) can be used for the following purposes:
+
+Cancel a transaction that is in 'auth' state at the moment
+Refund a transaction that is in a 'captured' state at the moment.
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.cancelRefundTransaction(<MIHPAYUD>,<TOKEN_ID>,<AMOUNT>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Validate VPA
+This method will let you validate VPA if it is a valid VPA or not.
+
+After the customer enters VPA on the merchant page, you need to call this API to check for VPA validation. If VPA is valid only then, the second call should be made.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.validateVPA(<VPA>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Update UDF
+The UDF Update API is used to update the UDF1-UDF5 values of a transaction. UDFs are the user-defined fields which are posted from the merchant to PayU. This API is specifically used to update the values in these fields in the PayU database. The return parameters are the updated UDF values of the transaction.
+
+Node.js
+
+const PayU = require("payu");
+
+const payuClient = new PayU({
+  key: <YOUR_MERCHANT_KEY>,
+  salt: <YOUR_MERCHANT_SALT>,
+},<ENVIRONMENT>);     // Possible value  = TEST/LIVE
+
+payuClient.opgsp.udfUpdate(<JSON>).then((res)=>{
+    console.log(res)
+}).catch((err)=>{
+    console.log(err)
+});
+Test and Go-live
+Test your integration
+After the integration is complete, you must test the integration before you go live and start collecting payment. You can start accepting actual payments from your customers once the test is successful.
+
+You can make test payments using one of the payment methods configured at the Checkout.
+
+Configure setIsProduction()
+Set the value of the setIsProduction() to false in the payment integration code. This enables the integration to accept live payments.
+
+Test credentials
+Following are the payment methods supported in PayU Test mode.
+
+Test credentials for Net Banking
+Use the following credentials to test the Net Banking integration:
+
+user name: payu
+password: payu
+OTP: 123456
+Test VPA for UPI
+You can use either of the following VPAs to test your UPI-related integration:
+
+anything@payu
+9999999999@payu.in
+❗️
+Callout
+The UPI in-app and UPI intent flow is not available in the Test mode.
+
+Test cards for EMI
+You can use the following Debit and Credit cards to test Emi integration.
+
+
+  </th>
+
+  <th>
+
+  </th>
+</tr>
+
+  <td>
+    1. **Card Number**: 4706-1378-0509-9594 2. **Expiry**: any future date (mm/yy) 3. **CVV**: 123 4. **OTP**: 111111 5. **Name**: Any name 6. **Mobile Number**: 9123412345 (mandatory for EMI)
+  </td>
+</tr>
+
+<tr>
+  <td>
+    AXIS DC EMI
+  </td>
+
+  <td>
+    1. **Card Number**: 4011-5100-0000-0007 2. **Expiry**: any future date (mm/yy) 3. **CVV**: 123 4. **OTP**: 111111 5. **Name**: Any name 6. **Mobile Number**: 9123412345 (mandatory for EMI)
+  </td>
+</tr>
+
+<tr>
+  <td>
+    HDFC CC EMI
+  </td>
+
+  <td>
+    1. **Card Number**: 4453-3410-65876437 2. **Expiry**: any future date (mm/yy) 3. **CVV**: 123 4. **OTP**: 111111 5. **Name**: Any name 6. **Mobile Number**: 9123412345 (mandatory for EMI)
+  </td>
+</tr>
+
+<tr>
+  <td>
+    ICICI CC EMI
+  </td>
+
+  <td>
+    1. **Card Number**: 4453-3410-65876437 2. **Expiry**: any future date (mm/yy) 3. **CVV**: 123 4. **OTP**: 111111 5. **Name**: Any name 6. **Mobile Number**: 9123412345 (mandatory for EMI)
+  </td>
+</tr>
+Test Wallets
+You can use the following wallets and their corresponding credentials to test wallet integration.
+
+
+  <th>
+    Mobile Number
+  </th>
+
+  <th>
+    OTP
+  </th>
+</tr>
+
+  <td>
+    7777777777
+  </td>
+
+  <td>
+    888888
+  </td>
+</tr>
+
+<tr>
+  <td>
+    PhonePe
+  </td>
+
+  <td>
+    Use the Phonepe Pre-Prod app for testing purposes as described in the following PhonePe doc. location:
+
+    [https://developer.phonepe.com/v1/docs/setting-up-test-account](https://developer.phonepe.com/v1/docs/setting-up-test-account)
+
+    Download the app and register your mobile number and follow the instructions as described in the above PhonePe docs.
+  </td>
+
+  <td>
+    NA
+  </td>
+</tr>
+
+<tr>
+  <td>
+    AmazonPay
+  </td>
+
+  <td>
+    You can test using your original Amazon account details.
+  </td>
+
+  <td>
+
+  </td>
+</tr>
+Go-live Checklist
+Go-Live Checkist
+Ensure these steps before you deploy the integration in a live environment.
+
+Collect Live Payments
+After testing the integration end-to-end, after you are sure that the integration is working as expected, you can switch to live mode to start accepting payments from your customers.
+
+🚧
+Watch Out!
+Ensure that you are using the production merchant key and salt generated in the live mode.
+
+Checklist 2: Configure environment() parameter
+Set the value of the environment()to 0 in the payment integration code. This enables the integration to accept live payments.
+
+Checklist 4:- Remove/comment meta -data code from manifest file :-
+For Android
+You must be comment/remove the below metadata code from the manifest file to use the UPI Collect flow on Production env:-
+
+XML
+
+<application>
+<meta-data android:name="payu_debug_mode_enabled" android:value="true" /> // set the value to false for production environment
+<meta-data android:name="payu_web_service_url" android:value="https://test.payu.in" /> //Comment in case of Production-->
+<meta-data android:name="payu_post_url" android:value="https://test.payu.in"/> //Comment in case of Production-->
+</appliction>
+Checklist 5: Configure verify payment method
+Configure the Verify payment method to fetch the payment status. We strongly recommend that you use this as a back up method to handle scenarios where the payment callback is failed due to technical error.
+
+Checklist 6: Configure Webhook
+We recommend that you configure Webhook to receive payment responses on your server. For more information, refer to Webhooks.

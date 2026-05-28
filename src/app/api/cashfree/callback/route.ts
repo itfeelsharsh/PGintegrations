@@ -29,15 +29,7 @@ async function handleCallback(req: NextRequest) {
     }
   }
 
-  let apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!apiBaseUrl || apiBaseUrl.includes("localhost")) {
-    if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
-      apiBaseUrl = req.nextUrl.origin;
-    }
-  }
-  if (!apiBaseUrl) {
-    apiBaseUrl = "https://payments.itfeelsharsh.workers.dev";
-  }
+  const apiBaseUrl = req.nextUrl.origin;
 
 
   if (!orderId) {
@@ -91,12 +83,15 @@ async function handleCallback(req: NextRequest) {
 
     const orderData = await verificationRes.json();
     const orderStatus = orderData.order_status || "";
+    const encodedPgData = encodeURIComponent(JSON.stringify(orderData));
 
     if (orderStatus.toUpperCase() === "PAID") {
-      return NextResponse.redirect(`${apiBaseUrl}/checkout?status=success&paymentId=${orderId}`);
+      return NextResponse.redirect(
+        `${apiBaseUrl}/checkout?status=success&paymentId=${orderId}&gateway=cashfree&pgData=${encodedPgData}`
+      );
     } else {
       return NextResponse.redirect(
-        `${apiBaseUrl}/checkout?status=failed&error=Payment+status+is+${encodeURIComponent(orderStatus)}`
+        `${apiBaseUrl}/checkout?status=failed&error=Payment+status+is+${encodeURIComponent(orderStatus)}&gateway=cashfree&pgData=${encodedPgData}`
       );
     }
   } catch (error: any) {

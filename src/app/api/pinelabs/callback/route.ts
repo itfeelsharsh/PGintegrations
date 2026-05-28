@@ -12,7 +12,7 @@ function generateUUID(): string {
   });
 }
 
-async function verifyOrder(orderId: string, baseUrl: string, clientId: string, clientSecret: string): Promise<{ success: boolean; status?: string; error?: string }> {
+async function verifyOrder(orderId: string, baseUrl: string, clientId: string, clientSecret: string): Promise<{ success: boolean; status?: string; error?: string; rawData?: any }> {
   try {
     const timestampAuth = new Date().toISOString();
     const requestIdAuth = generateUUID();
@@ -57,7 +57,7 @@ async function verifyOrder(orderId: string, baseUrl: string, clientId: string, c
     const orderData = await orderRes.json();
 
     if (!orderRes.ok) {
-      return { success: false, error: orderData.message || "Failed to fetch order status from PineLabs." };
+      return { success: false, error: orderData.message || "Failed to fetch order status from PineLabs.", rawData: orderData };
     }
 
     // PineLabs response format: response.data.status or response.status
@@ -69,6 +69,7 @@ async function verifyOrder(orderId: string, baseUrl: string, clientId: string, c
     return {
       success: isSuccess,
       status: orderStatus,
+      rawData: orderData,
     };
   } catch (err: any) {
     console.error("Error verifying PineLabs order:", err);
@@ -139,15 +140,7 @@ async function handleCallback(req: NextRequest) {
     // Ignore if not in Cloudflare env
   }
 
-  let apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!apiBaseUrl || apiBaseUrl.includes("localhost")) {
-    if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
-      apiBaseUrl = req.nextUrl.origin;
-    }
-  }
-  if (!apiBaseUrl) {
-    apiBaseUrl = "https://payments.itfeelsharsh.workers.dev";
-  }
+  const apiBaseUrl = req.nextUrl.origin;
 
   // 1. If explicit failure parameter or query status is failed, redirect to failure page immediately
   if (queryStatus === "failed" || bodyStatus === "failed") {
@@ -157,15 +150,22 @@ async function handleCallback(req: NextRequest) {
   // 2. Perform server-to-server verification if orderId is available
   if (orderId && clientId && clientSecret) {
     const verification = await verifyOrder(orderId, baseUrl, clientId, clientSecret);
+    const encodedPgData = encodeURIComponent(JSON.stringify(verification.rawData || { orderId, status: verification.status }));
     if (verification.success) {
-      return NextResponse.redirect(`${apiBaseUrl}/checkout?status=success&paymentId=${orderId}`);
+      return NextResponse.redirect(
+        `${apiBaseUrl}/checkout?status=success&paymentId=${orderId}&gateway=pinelabs&pgData=${encodedPgData}`
+      );
     } else {
       // In test mode, if verification API fails but we didn't get an explicit failure, check if we can fallback to simulate success or show failure
       if (testMode) {
         console.warn("PineLabs verification failed in test mode. Falling back to status success for testing.", verification.error);
-        return NextResponse.redirect(`${apiBaseUrl}/checkout?status=success&paymentId=${orderId || txnid}`);
+        return NextResponse.redirect(
+          `${apiBaseUrl}/checkout?status=success&paymentId=${orderId || txnid}&gateway=pinelabs&pgData=${encodedPgData}`
+        );
       }
-      return NextResponse.redirect(`${apiBaseUrl}/checkout?status=failed&error=Verification+failed:+${encodeURIComponent(verification.error || "unknown status")}`);
+      return NextResponse.redirect(
+        `${apiBaseUrl}/checkout?status=failed&error=Verification+failed:+${encodeURIComponent(verification.error || "unknown status")}&gateway=pinelabs&pgData=${encodedPgData}`
+      );
     }
   }
 

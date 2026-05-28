@@ -10,7 +10,7 @@
     "dev:worker": "wrangler dev",
     "preview": "npm run build:worker && npm run dev:worker",
     "deploy": "npm run build:worker && wrangler deploy",
-    "start": "next start",
+    "start": "npm run preview",
     "lint": "eslint"
   },
   "dependencies": {

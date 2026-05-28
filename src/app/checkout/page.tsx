@@ -20,6 +20,183 @@ const loadScript = (src: string): Promise<boolean> => {
   });
 };
 
+const GATEWAY_LABELS: Record<string, string> = {
+  razorpay: "Razorpay",
+  paytm: "Paytm PG",
+  payu: "PayU",
+  pinelabs: "Pine Labs (Plural)",
+  cashfree: "Cashfree",
+  phonepe: "PhonePe",
+};
+
+function PgDataTable({ data }: { data: Record<string, any> }) {
+  const [showRaw, setShowRaw] = useState(false);
+  const entries = Object.entries(data);
+
+  if (entries.length === 0) return null;
+
+  const sensitiveKeys = ["key", "salt", "secret", "password", "token", "auth", "signature", "hash"];
+  const isSensitive = (k: string) => sensitiveKeys.some((s) => k.toLowerCase().includes(s));
+
+  return (
+    <div style={{ marginTop: "1.5rem" }} className="text-start">
+      <div className="d-flex align-items-center justify-content-between mb-2">
+        <h4 className="h6 text-secondary mb-0 fw-bold">Gateway Response Data</h4>
+        <button
+          className="btn btn-secondary btn-sm"
+          type="button"
+          onClick={() => setShowRaw(!showRaw)}
+        >
+          {showRaw ? "Hide Raw JSON" : "Show Raw JSON"}
+        </button>
+      </div>
+
+      <table className="table table-bordered table-striped table-hover table-sm" style={{ fontSize: "0.85rem" }}>
+        <tbody>
+          {entries.map(([k, v]) => (
+            <tr key={k}>
+              <td className="text-secondary font-monospace" style={{ wordBreak: "break-all", width: "40%" }}>
+                {k}
+              </td>
+              <td className="font-monospace" style={{ wordBreak: "break-all" }}>
+                {isSensitive(k) ? "••••••••••••" : typeof v === "object" ? JSON.stringify(v) : String(v)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {showRaw && (
+        <pre className="bg-light p-3 border text-dark" style={{ fontSize: "0.8rem", maxHeight: "250px", overflow: "auto" }}>
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function PaymentSuccessCard({
+  paymentId,
+  amount,
+  gateway,
+  pgData,
+  onReset,
+}: {
+  paymentId: string;
+  amount: string;
+  gateway: string;
+  pgData: Record<string, any> | null;
+  onReset: () => void;
+}) {
+  const gwLabel = GATEWAY_LABELS[gateway] || (gateway ? gateway.toUpperCase() : "Unknown Gateway");
+  const ts = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+  return (
+    <div className="container py-5 text-dark">
+      <div className="mx-auto" style={{ maxWidth: "650px" }}>
+        <div className="card border-success">
+          <div className="card-header bg-success text-white py-3">
+            <h3 className="card-title h5 mb-0 fw-bold">Payment Successful</h3>
+          </div>
+          <div className="card-body p-4 bg-white">
+            <div className="alert alert-success">
+              <strong>Success!</strong> Your payment has been verified server-side.
+            </div>
+
+            <table className="table table-bordered">
+              <tbody>
+                <tr>
+                  <th style={{ width: "35%" }}>Payment ID</th>
+                  <td><code className="text-dark">{paymentId || "—"}</code></td>
+                </tr>
+                <tr>
+                  <th>Amount Paid</th>
+                  <td><strong>₹{Number(amount).toLocaleString("en-IN")}.00</strong></td>
+                </tr>
+                <tr>
+                  <th>Gateway</th>
+                  <td><span className="badge bg-primary">{gwLabel}</span></td>
+                </tr>
+                <tr>
+                  <th>Timestamp</th>
+                  <td>{ts}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {pgData && Object.keys(pgData).length > 0 && <PgDataTable data={pgData} />}
+
+            <div className="mt-4 d-flex gap-2">
+              <Link href="/" className="btn btn-success">
+                Continue Shopping
+              </Link>
+              <button onClick={onReset} className="btn btn-outline-secondary" type="button">
+                Make Another Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentFailedCard({
+  errorMessage,
+  gateway,
+  pgData,
+  onRetry,
+}: {
+  errorMessage: string;
+  gateway: string;
+  pgData: Record<string, any> | null;
+  onRetry: () => void;
+}) {
+  const gwLabel = GATEWAY_LABELS[gateway] || (gateway ? gateway.toUpperCase() : "Unknown Gateway");
+  const ts = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+  return (
+    <div className="container py-5 text-dark">
+      <div className="mx-auto" style={{ maxWidth: "650px" }}>
+        <div className="card border-danger">
+          <div className="card-header bg-danger text-white py-3">
+            <h3 className="card-title h5 mb-0 fw-bold">Payment Failed</h3>
+          </div>
+          <div className="card-body p-4 bg-white">
+            <div className="alert alert-danger">
+              <strong>Error!</strong> {errorMessage || "The payment transaction could not be completed. No charges were made."}
+            </div>
+
+            <table className="table table-bordered">
+              <tbody>
+                <tr>
+                  <th style={{ width: "35%" }}>Gateway</th>
+                  <td><span className="badge bg-secondary">{gwLabel}</span></td>
+                </tr>
+                <tr>
+                  <th>Timestamp</th>
+                  <td>{ts}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {pgData && Object.keys(pgData).length > 0 && <PgDataTable data={pgData} />}
+
+            <div className="mt-4 d-flex gap-2">
+              <button onClick={onRetry} className="btn btn-danger" type="button">
+                Try Again
+              </button>
+              <Link href="/" className="btn btn-outline-secondary">
+                Cancel & Return
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const productName = searchParams.get("product") || "VoltGlide Obsidian Pro";
@@ -28,8 +205,19 @@ function CheckoutContent() {
   const initialStatus = searchParams.get("status") || "idle";
   const initialPaymentId = searchParams.get("paymentId") || "";
   const initialError = searchParams.get("error") || "";
+  const gatewayParam = searchParams.get("gateway") || "";
 
-  const [selectedGateway, setSelectedGateway] = useState("");
+  const pgDataParam = searchParams.get("pgData");
+  let pgResponseData: Record<string, any> | null = null;
+  if (pgDataParam) {
+    try {
+      pgResponseData = JSON.parse(decodeURIComponent(pgDataParam));
+    } catch (e) {
+      console.error("Failed to parse pgData", e);
+    }
+  }
+
+  const [selectedGateway, setSelectedGateway] = useState(gatewayParam);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed" | "keys_missing">(
     initialStatus === "success" || initialStatus === "failed" || initialStatus === "keys_missing" ? (initialStatus as any) : "idle"
@@ -606,92 +794,86 @@ function CheckoutContent() {
   ];
 
 
+  const resetToIdle = () => {
+    setPaymentStatus("idle");
+    setPaymentId("");
+    setErrorMessage("");
+  };
+
   if (paymentStatus === "success") {
     return (
-      <div className="container text-center py-5">
-        <div className="card shadow-sm border-success mx-auto p-4" style={{ maxWidth: "500px" }}>
-          <div className="card-body">
-            <i className="bi  fs-1 mb-3"></i>
-            <h3 className="fw-bold mb-2">Payment Successful</h3>
-            <p className="text-muted mb-4">
-              Your transaction has been processed and verified.
-            </p>
-
-            <div className="bg-light p-3 rounded border text-start mb-4 small">
-              <div className="row g-2">
-                <div className="col-5 text-secondary">Payment ID:</div>
-                <div className="col-7 fw-semibold text-break">{paymentId}</div>
-                <div className="col-5 text-secondary">Amount Paid:</div>
-                <div className="col-7 fw-semibold">₹{Number(amount).toLocaleString("en-IN")}.00</div>
-                <div className="col-5 text-secondary">Gateway:</div>
-                <div className="col-7 fw-semibold">{selectedGateway.toUpperCase()}</div>
-              </div>
-            </div>
-
-            <div className="d-grid">
-              <Link href="/" className="btn btn-dark py-2">
-                Continue Shopping
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PaymentSuccessCard
+        paymentId={paymentId}
+        amount={amount}
+        gateway={selectedGateway}
+        pgData={pgResponseData}
+        onReset={resetToIdle}
+      />
     );
   }
 
   if (paymentStatus === "keys_missing") {
     const isCashfree = selectedGateway === "cashfree";
     const isPhonepe = selectedGateway === "phonepe";
+    const isPaytm = selectedGateway === "paytm";
+    const isPayu = selectedGateway === "payu";
+    const isPinelabs = selectedGateway === "pinelabs";
+
     const keysMessage = isCashfree
       ? "Cashfree API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
       : isPhonepe
       ? "PhonePe API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      : isPaytm
+      ? "Paytm API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      : isPayu
+      ? "PayU API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      : isPinelabs
+      ? "PineLabs API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
       : "Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.";
 
+    const vars = isCashfree
+      ? ["NEXT_PUBLIC_CASHFREE_APP_ID=TESTxxxxxx", "CASHFREE_SECRET_KEY=cfsk_ma_xxxxxx", "NEXT_PUBLIC_CASHFREE_ENV=sandbox"]
+      : isPhonepe
+      ? ["PHONEPE_CLIENT_ID=M22BPAMTMAVQU_xxxxxx", "PHONEPE_CLIENT_SECRET=xxxxxx", "NEXT_PUBLIC_PHONEPE_CLIENT_VERSION=1", "NEXT_PUBLIC_PHONEPE_ENV=sandbox"]
+      : isPaytm
+      ? ["NEXT_PUBLIC_PAYTM_MID=xxxxxx", "PAYTM_MERCHANT_KEY=xxxxxx", "NEXT_PUBLIC_PAYTM_WEBSITE=WEBSTAGING", "NEXT_PUBLIC_PAYTM_ENV=staging"]
+      : isPayu
+      ? ["NEXT_PUBLIC_PAYU_KEY=xxxxxx", "PAYU_MERCHANT_SALT=xxxxxx", "NEXT_PUBLIC_PAYU_ENV=test"]
+      : isPinelabs
+      ? ["NEXT_PUBLIC_PINELABS_CLIENT_ID=xxxxxx", "PINELABS_CLIENT_SECRET=xxxxxx", "NEXT_PUBLIC_PINELABS_MID=xxxxxx", "NEXT_PUBLIC_PINELABS_ENV=test"]
+      : ["NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxx", "RAZORPAY_KEY_SECRET=xxxxxx"];
+
     return (
-      <div className="container text-center py-5">
-        <div className="card shadow-sm border-warning mx-auto p-4" style={{ maxWidth: "500px" }}>
-          <div className="card-body">
-            <i className="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3"></i>
-            <h4 className="fw-bold mb-3">Environment Keys Missing</h4>
-            <p className="text-secondary small mb-4">{keysMessage}</p>
-
-            <div className="bg-light p-3 rounded text-start mb-4 font-monospace small border">
-              {isCashfree ? (
-                <>
-                  <div>NEXT_PUBLIC_CASHFREE_APP_ID=TESTxxxxxx</div>
-                  <div>CASHFREE_SECRET_KEY=cfsk_ma_xxxxxx</div>
-                  <div>NEXT_PUBLIC_CASHFREE_ENV=sandbox</div>
-                </>
-              ) : isPhonepe ? (
-                <>
-                  <div>PHONEPE_CLIENT_ID=M22BPAMTMAVQU_xxxxxx</div>
-                  <div>PHONEPE_CLIENT_SECRET=xxxxxx</div>
-                  <div>NEXT_PUBLIC_PHONEPE_CLIENT_VERSION=1</div>
-                  <div>NEXT_PUBLIC_PHONEPE_ENV=sandbox</div>
-                </>
-              ) : (
-                <>
-                  <div>NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxx</div>
-                  <div>RAZORPAY_KEY_SECRET=xxxxxx</div>
-                </>
-              )}
+      <div className="container py-5 text-dark">
+        <div className="mx-auto" style={{ maxWidth: "550px" }}>
+          <div className="card border-warning">
+            <div className="card-header bg-warning text-dark py-3">
+              <h3 className="card-title h5 mb-0 fw-bold">Environment Keys Missing</h3>
             </div>
+            <div className="card-body p-4 bg-white text-start">
+              <p className="small mb-4">{keysMessage}</p>
 
-            <div className="d-grid gap-2">
-              <button
-                onClick={handleSimulateMockSuccess}
-                disabled={isProcessing}
-                className="btn btn-dark py-2"
-              >
-                {isProcessing ? "Processing..." : "Simulate Successful Payment"}
-              </button>
-              <button
-                onClick={() => setPaymentStatus("idle")}
-                className="btn btn-outline-secondary py-2"
-              >
-                Go Back
-              </button>
+              <div className="bg-light p-3 rounded text-start mb-4 font-monospace small border">
+                {vars.map((v) => <div key={v}>{v}</div>)}
+              </div>
+
+              <div className="d-grid gap-2">
+                <button
+                  onClick={handleSimulateMockSuccess}
+                  disabled={isProcessing}
+                  className="btn btn-warning text-dark py-2"
+                  type="button"
+                >
+                  {isProcessing ? "Processing..." : "Simulate Successful Payment"}
+                </button>
+                <button
+                  onClick={resetToIdle}
+                  className="btn btn-outline-secondary py-2"
+                  type="button"
+                >
+                  Go Back
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -701,24 +883,12 @@ function CheckoutContent() {
 
   if (paymentStatus === "failed") {
     return (
-      <div className="container text-center py-5">
-        <div className="card shadow-sm border-danger mx-auto p-4" style={{ maxWidth: "500px" }}>
-          <div className="card-body">
-            <i className="bi bi-x-circle-fill text-danger fs-1 mb-3"></i>
-            <h3 className="fw-bold mb-2">Payment Failed</h3>
-            <p className="text-danger small mb-4">{errorMessage || "The payment transaction could not be completed."}</p>
-
-            <div className="d-grid gap-2">
-              <button onClick={() => setPaymentStatus("idle")} className="btn btn-dark py-2">
-                Try Again
-              </button>
-              <Link href="/" className="btn btn-outline-secondary py-2">
-                Cancel
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PaymentFailedCard
+        errorMessage={errorMessage}
+        gateway={selectedGateway}
+        pgData={pgResponseData}
+        onRetry={resetToIdle}
+      />
     );
   }
 

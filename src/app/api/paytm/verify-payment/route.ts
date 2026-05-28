@@ -14,20 +14,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let mid = process.env.NEXT_PUBLIC_PAYTM_MID;
-    let merchantKey = process.env.PAYTM_MERCHANT_KEY;
-    let paytmEnv = process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+    let mid = undefined;
+    let merchantKey = undefined;
+    let paytmEnv = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        mid = mid || (ctx.env as any).NEXT_PUBLIC_PAYTM_MID;
-        merchantKey = merchantKey || (ctx.env as any).PAYTM_MERCHANT_KEY;
-        paytmEnv = paytmEnv || (ctx.env as any).NEXT_PUBLIC_PAYTM_ENV || "staging";
+        mid = (ctx.env as any).NEXT_PUBLIC_PAYTM_MID;
+        merchantKey = (ctx.env as any).PAYTM_MERCHANT_KEY;
+        paytmEnv = (ctx.env as any).NEXT_PUBLIC_PAYTM_ENV;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    mid = mid || process.env.NEXT_PUBLIC_PAYTM_MID;
+    merchantKey = merchantKey || process.env.PAYTM_MERCHANT_KEY;
+    paytmEnv = paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;
@@ -117,6 +121,7 @@ export async function POST(req: NextRequest) {
         txnId: resData.body.txnId,
         amount: resData.body.txnAmount,
         status: resultStatus,
+        pgData: resData.body,
       });
     } else {
       return NextResponse.json({
@@ -124,6 +129,7 @@ export async function POST(req: NextRequest) {
         status: resultStatus,
         error: resultInfo.resultMsg || `Transaction status: ${resultStatus}`,
         code: "TRANSACTION_FAILED",
+        pgData: resData.body,
       });
     }
   } catch (error: any) {

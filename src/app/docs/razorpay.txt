@@ -1243,7 +1243,7 @@ providers | string | Providers to be allowed | [Any app provider](https://razorp
 ....
 {
   "custom": {
-    "name": "Pay with Apps",
+    "name": "Test using Apps",
     "instruments": [
       {
         "method": "app",

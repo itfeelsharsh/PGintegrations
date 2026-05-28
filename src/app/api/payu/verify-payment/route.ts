@@ -21,20 +21,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let key = process.env.NEXT_PUBLIC_PAYU_KEY;
-    let salt = process.env.PAYU_MERCHANT_SALT;
-    let payuEnv = process.env.NEXT_PUBLIC_PAYU_ENV || "test";
+    let key = undefined;
+    let salt = undefined;
+    let payuEnv = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        key = key || (ctx.env as any).NEXT_PUBLIC_PAYU_KEY;
-        salt = salt || (ctx.env as any).PAYU_MERCHANT_SALT;
-        payuEnv = payuEnv || (ctx.env as any).NEXT_PUBLIC_PAYU_ENV || "test";
+        key = (ctx.env as any).NEXT_PUBLIC_PAYU_KEY;
+        salt = (ctx.env as any).PAYU_MERCHANT_SALT;
+        payuEnv = (ctx.env as any).NEXT_PUBLIC_PAYU_ENV;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    key = key || process.env.NEXT_PUBLIC_PAYU_KEY;
+    salt = salt || process.env.PAYU_MERCHANT_SALT;
+    payuEnv = payuEnv || process.env.NEXT_PUBLIC_PAYU_ENV || "test";
 
     if (key === "undefined" || key === "null") key = undefined;
     if (salt === "undefined" || salt === "null") salt = undefined;
@@ -95,6 +99,7 @@ export async function POST(req: NextRequest) {
         mihpayid: txn.mihpayid,
         status: txn.status,
         amount: txn.amount,
+        pgData: txn,
       });
     } else {
       return NextResponse.json({
@@ -102,6 +107,7 @@ export async function POST(req: NextRequest) {
         status: txn?.status || "unknown",
         error: txn?.error_Message || "Transaction not found or failed.",
         code: "TRANSACTION_FAILED",
+        pgData: txn || null,
       });
     }
   } catch (error: any) {

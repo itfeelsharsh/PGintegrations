@@ -13,20 +13,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
-    let secretKey = process.env.CASHFREE_SECRET_KEY;
-    let cfEnv = process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox";
+    let appId = undefined;
+    let secretKey = undefined;
+    let cfEnv = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        appId = appId || (ctx.env as any).NEXT_PUBLIC_CASHFREE_APP_ID;
-        secretKey = secretKey || (ctx.env as any).CASHFREE_SECRET_KEY;
-        cfEnv = cfEnv || (ctx.env as any).NEXT_PUBLIC_CASHFREE_ENV || "sandbox";
+        appId = (ctx.env as any).NEXT_PUBLIC_CASHFREE_APP_ID;
+        secretKey = (ctx.env as any).CASHFREE_SECRET_KEY;
+        cfEnv = (ctx.env as any).NEXT_PUBLIC_CASHFREE_ENV;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    appId = appId || process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
+    secretKey = secretKey || process.env.CASHFREE_SECRET_KEY;
+    cfEnv = cfEnv || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox";
 
     // Handle bundler replacement quirks
     if (appId === "undefined" || appId === "null") appId = undefined;
@@ -47,15 +51,7 @@ export async function POST(req: NextRequest) {
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const customerId = `cust_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    let baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!baseUrl || baseUrl.includes("localhost")) {
-      if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
-        baseUrl = req.nextUrl.origin;
-      }
-    }
-    if (!baseUrl) {
-      baseUrl = "https://payments.itfeelsharsh.workers.dev";
-    }
+    const baseUrl = req.nextUrl.origin;
     const returnUrl = `${baseUrl}/api/cashfree/callback?order_id={order_id}`;
 
     const host = cfEnv === "production" ? "api.cashfree.com" : "sandbox.cashfree.com";

@@ -1,22 +1,27 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export function getPhonePeConfig() {
-  let clientId = process.env.PHONEPE_CLIENT_ID;
-  let clientSecret = process.env.PHONEPE_CLIENT_SECRET;
-  let clientVersion = process.env.NEXT_PUBLIC_PHONEPE_CLIENT_VERSION || "1";
-  let peEnv = process.env.NEXT_PUBLIC_PHONEPE_ENV || "sandbox";
+  let clientId = undefined;
+  let clientSecret = undefined;
+  let clientVersion = undefined;
+  let peEnv = undefined;
 
   try {
     const ctx = getCloudflareContext();
     if (ctx && ctx.env) {
-      clientId = clientId || (ctx.env as any).PHONEPE_CLIENT_ID;
-      clientSecret = clientSecret || (ctx.env as any).PHONEPE_CLIENT_SECRET;
-      clientVersion = clientVersion || (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_VERSION || "1";
-      peEnv = peEnv || (ctx.env as any).NEXT_PUBLIC_PHONEPE_ENV || "sandbox";
+      clientId = (ctx.env as any).PHONEPE_CLIENT_ID;
+      clientSecret = (ctx.env as any).PHONEPE_CLIENT_SECRET;
+      clientVersion = (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_VERSION;
+      peEnv = (ctx.env as any).NEXT_PUBLIC_PHONEPE_ENV;
     }
   } catch (e) {
     // Ignore if not running in Cloudflare context
   }
+
+  clientId = clientId || process.env.PHONEPE_CLIENT_ID;
+  clientSecret = clientSecret || process.env.PHONEPE_CLIENT_SECRET;
+  clientVersion = clientVersion || process.env.NEXT_PUBLIC_PHONEPE_CLIENT_VERSION || "1";
+  peEnv = peEnv || process.env.NEXT_PUBLIC_PHONEPE_ENV || "sandbox";
 
   // Handle bundler replacement quirks
   if (clientId === "undefined" || clientId === "null") clientId = undefined;

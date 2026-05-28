@@ -29,15 +29,7 @@ async function handleCallback(req: NextRequest) {
     }
   }
 
-  let apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!apiBaseUrl || apiBaseUrl.includes("localhost")) {
-    if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
-      apiBaseUrl = req.nextUrl.origin;
-    }
-  }
-  if (!apiBaseUrl) {
-    apiBaseUrl = "https://payments.itfeelsharsh.workers.dev";
-  }
+  const apiBaseUrl = req.nextUrl.origin;
 
   if (!orderId) {
     return NextResponse.redirect(`${apiBaseUrl}/checkout?status=failed&error=Missing+order_id+in+PhonePe+callback.`);
@@ -75,12 +67,15 @@ async function handleCallback(req: NextRequest) {
 
     const resData = await response.json();
     const state = resData.state;
+    const encodedPgData = encodeURIComponent(JSON.stringify(resData));
 
     if (state === "COMPLETED") {
-      return NextResponse.redirect(`${apiBaseUrl}/checkout?status=success&paymentId=${orderId}&gateway=phonepe`);
+      return NextResponse.redirect(
+        `${apiBaseUrl}/checkout?status=success&paymentId=${orderId}&gateway=phonepe&pgData=${encodedPgData}`
+      );
     } else {
       return NextResponse.redirect(
-        `${apiBaseUrl}/checkout?status=failed&error=${encodeURIComponent(`Payment status is ${state}`)}`
+        `${apiBaseUrl}/checkout?status=failed&error=${encodeURIComponent(`Payment status is ${state}`)}&gateway=phonepe&pgData=${encodedPgData}`
       );
     }
   } catch (error: any) {

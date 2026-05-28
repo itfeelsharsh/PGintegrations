@@ -32,16 +32,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let keySecret = process.env.RAZORPAY_KEY_SECRET;
+    let keySecret = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        keySecret = keySecret || (ctx.env as any).RAZORPAY_KEY_SECRET;
+        keySecret = (ctx.env as any).RAZORPAY_KEY_SECRET;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    keySecret = keySecret || process.env.RAZORPAY_KEY_SECRET;
 
     if (keySecret === "undefined" || keySecret === "null") keySecret = undefined;
 
@@ -58,7 +60,37 @@ export async function POST(req: NextRequest) {
     );
 
     if (expectedSignature === razorpay_signature) {
-      return NextResponse.json({ verified: true });
+      // Fetch full payment details from Razorpay
+      let pgData: Record<string, any> = {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+      };
+      try {
+        const credentials = `${keySecret ? "" : ""}${keySecret}`;
+        // We need keyId too — re-read it
+        let keyId2: any;
+        try {
+          const { getCloudflareContext: getCFCtx2 } = await import("@opennextjs/cloudflare");
+          const ctx2 = getCFCtx2();
+          if (ctx2 && ctx2.env) keyId2 = (ctx2.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        } catch (_) {}
+        keyId2 = keyId2 || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        if (keyId2 && keySecret) {
+          const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
+            headers: {
+              Authorization: `Basic ${btoa(`${keyId2}:${keySecret}`)}`,
+            },
+          });
+          if (paymentRes.ok) {
+            const paymentData = await paymentRes.json();
+            pgData = { ...pgData, ...paymentData };
+          }
+        }
+      } catch (_) {
+        // Non-critical — signature verified, just couldn't fetch full details
+      }
+      return NextResponse.json({ verified: true, pgData });
     } else {
       console.warn("Signature mismatch. Verification failed.");
       return NextResponse.json(

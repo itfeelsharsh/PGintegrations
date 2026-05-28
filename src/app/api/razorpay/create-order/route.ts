@@ -6,18 +6,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { amount, currency = "INR" } = body;
 
-    let keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    let keySecret = process.env.RAZORPAY_KEY_SECRET;
+    let keyId = undefined;
+    let keySecret = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        keyId = keyId || (ctx.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
-        keySecret = keySecret || (ctx.env as any).RAZORPAY_KEY_SECRET;
+        keyId = (ctx.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        keySecret = (ctx.env as any).RAZORPAY_KEY_SECRET;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    keyId = keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    keySecret = keySecret || process.env.RAZORPAY_KEY_SECRET;
 
     // Handle bundler replacement quirks
     if (keyId === "undefined" || keyId === "null") keyId = undefined;

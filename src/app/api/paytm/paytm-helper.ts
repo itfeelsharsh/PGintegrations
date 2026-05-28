@@ -5,20 +5,21 @@ const IV = "@@@@&&&&####$$$$";
 export class PaytmChecksum {
   static encrypt(input: string, key: string): string {
     const cipher = crypto.createCipheriv("aes-128-cbc", Buffer.from(key, "utf8"), Buffer.from(IV, "utf8"));
-    let encrypted = cipher.update(input, "utf8", "base64");
-    encrypted += cipher.final("base64");
-    return encrypted;
+    const encryptedUpdate = cipher.update(input, "utf8");
+    const encryptedFinal = cipher.final();
+    return Buffer.concat([encryptedUpdate, encryptedFinal]).toString("base64");
   }
 
   static decrypt(encrypted: string, key: string): string {
     const decipher = crypto.createDecipheriv("aes-128-cbc", Buffer.from(key, "utf8"), Buffer.from(IV, "utf8"));
-    let decrypted = decipher.update(encrypted, "base64", "utf8");
+    const decryptedUpdate = decipher.update(Buffer.from(encrypted, "base64"));
+    let decryptedFinal = Buffer.alloc(0);
     try {
-      decrypted += decipher.final("utf8");
+      decryptedFinal = decipher.final();
     } catch (e) {
       console.error("Paytm Decrypt Error:", e);
     }
-    return decrypted;
+    return Buffer.concat([decryptedUpdate, decryptedFinal]).toString("utf8");
   }
 
   static generateRandomString(length: number): Promise<string> {

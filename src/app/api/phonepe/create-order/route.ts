@@ -46,15 +46,7 @@ export async function POST(req: NextRequest) {
     const amountInPaisa = Math.round(Number(amount) * 100);
 
     // Construct return redirect URL
-    let baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!baseUrl || baseUrl.includes("localhost")) {
-      if (req.nextUrl.hostname !== "localhost" && req.nextUrl.hostname !== "127.0.0.1") {
-        baseUrl = req.nextUrl.origin;
-      }
-    }
-    if (!baseUrl) {
-      baseUrl = "https://payments.itfeelsharsh.workers.dev";
-    }
+    const baseUrl = req.nextUrl.origin;
     const redirectUrl = `${baseUrl}/api/phonepe/callback?order_id=${orderId}`;
 
     // Payload for initiating payment

@@ -1,6 +1,8 @@
 /* Custom adjustments on top of Bootstrap */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f8f9fa;
   color: #212529;
 }
@@ -36,4 +38,59 @@ body {
 .opacity-50 .gateway-card:hover {
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* ─── Payment Result Cards ──────────────────────── */
+
+.pg-result-card {
+  animation: slideUpFade 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark theme result container */
+.result-dark {
+  background: #0d1117;
+  min-height: 100vh;
+}
+
+/* PG data table rows */
+.pg-data-row {
+  transition: background 0.15s;
+}
+.pg-data-row:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Success icon pulse */
+.success-icon-pulse {
+  animation: successPulse 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes successPulse {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Fail icon shake */
+.fail-icon-shake {
+  animation: failShake 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes failShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }

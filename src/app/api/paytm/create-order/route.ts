@@ -14,24 +14,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let mid = process.env.NEXT_PUBLIC_PAYTM_MID;
-    let merchantKey = process.env.PAYTM_MERCHANT_KEY;
-    let website = process.env.NEXT_PUBLIC_PAYTM_WEBSITE;
-    let channelId = process.env.NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
-    let paytmEnv = process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+    let mid = undefined;
+    let merchantKey = undefined;
+    let website = undefined;
+    let channelId = undefined;
+    let paytmEnv = undefined;
 
     try {
       const ctx = getCloudflareContext();
       if (ctx && ctx.env) {
-        mid = mid || (ctx.env as any).NEXT_PUBLIC_PAYTM_MID;
-        merchantKey = merchantKey || (ctx.env as any).PAYTM_MERCHANT_KEY;
-        website = website || (ctx.env as any).NEXT_PUBLIC_PAYTM_WEBSITE;
-        channelId = channelId || (ctx.env as any).NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
-        paytmEnv = paytmEnv || (ctx.env as any).NEXT_PUBLIC_PAYTM_ENV || "staging";
+        mid = (ctx.env as any).NEXT_PUBLIC_PAYTM_MID;
+        merchantKey = (ctx.env as any).PAYTM_MERCHANT_KEY;
+        website = (ctx.env as any).NEXT_PUBLIC_PAYTM_WEBSITE;
+        channelId = (ctx.env as any).NEXT_PUBLIC_PAYTM_CHANNEL_ID;
+        paytmEnv = (ctx.env as any).NEXT_PUBLIC_PAYTM_ENV;
       }
     } catch (e) {
       // Ignore if not running in Cloudflare environment
     }
+
+    mid = mid || process.env.NEXT_PUBLIC_PAYTM_MID;
+    merchantKey = merchantKey || process.env.PAYTM_MERCHANT_KEY;
+    website = website || process.env.NEXT_PUBLIC_PAYTM_WEBSITE;
+    channelId = channelId || process.env.NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
+    paytmEnv = paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;
@@ -86,7 +92,10 @@ export async function POST(req: NextRequest) {
           { mode: "DC" },
           { mode: "NB" },
           { mode: "EMI" },
-          { mode: "PPBL" }
+          { mode: "PPBL" },
+          { mode: "PAYTM_DIGITAL_CREDIT" },
+          { mode: "GIFT_VOUCHER" },
+          { mode: "LOGIN" },
         ],
       },
       head: {

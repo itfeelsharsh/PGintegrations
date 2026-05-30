@@ -1128,7 +1128,7 @@ function CheckoutContent() {
 
             <div className="card shadow-sm border bg-white mb-4">
               <div className="card-header bg-white py-3">
-                <h5 className="mb-0 fw-bold">2. Payment Method</h5>
+                <h5 className="mb-0 fw-bold">2. Choose Payment Gateway to Test with</h5>
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -1171,7 +1171,7 @@ function CheckoutContent() {
             {/* Collapsible local credential configuration drawer */}
             <div className="card shadow-sm border bg-white mb-4">
               <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center cursor-pointer" onClick={() => setIsCredsOpen(!isCredsOpen)} style={{ cursor: "pointer" }}>
-                <h5 className="mb-0 fw-bold text-dark">⚙️ Developer Config: Sandbox Credentials Overrides</h5>
+                <h5 className="mb-0 fw-bold text-dark">Dev Config</h5>
                 <span className="text-secondary small">{isCredsOpen ? "Hide" : "Show"}</span>
               </div>
               {isCredsOpen && (

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    keySecret = keySecret || process.env.RAZORPAY_KEY_SECRET;
+    keySecret = req.headers.get("x-razorpay-key-secret") || keySecret || process.env.RAZORPAY_KEY_SECRET;
 
     if (keySecret === "undefined" || keySecret === "null") keySecret = undefined;
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
           const ctx2 = getCFCtx2();
           if (ctx2 && ctx2.env) keyId2 = (ctx2.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
         } catch (_) {}
-        keyId2 = keyId2 || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        keyId2 = req.headers.get("x-razorpay-key-id") || keyId2 || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
         if (keyId2 && keySecret) {
           const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
             headers: {

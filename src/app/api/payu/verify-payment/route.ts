@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    key = key || process.env.NEXT_PUBLIC_PAYU_KEY;
-    salt = salt || process.env.PAYU_MERCHANT_SALT;
-    payuEnv = payuEnv || process.env.NEXT_PUBLIC_PAYU_ENV || "test";
+    key = req.headers.get("x-payu-key") || key || process.env.NEXT_PUBLIC_PAYU_KEY;
+    salt = req.headers.get("x-payu-salt") || salt || process.env.PAYU_MERCHANT_SALT;
+    payuEnv = req.headers.get("x-payu-env") || payuEnv || process.env.NEXT_PUBLIC_PAYU_ENV || "test";
 
     if (key === "undefined" || key === "null") key = undefined;
     if (salt === "undefined" || salt === "null") salt = undefined;

@@ -1,0 +1,11 @@
+Phase 1:
+- Client-side credentials manager in checkout UI (stored in localStorage) to override environment variables for sandbox testing.
+- Console logging decorator for API requests/responses in dev mode for quick request-response inspection.
+
+Phase 2:
+- Local transaction history dashboard: track success/failed attempts, response structures, and timings using client-side storage.
+- Interactive JSON payload mock generator: mock error scenarios (e.g. bad request, signature verification failure) to test checkout resilience.
+
+Phase 3:
+- Fully interactive visual integration documentation and playground inside the application.
+- Auto-generation of client SDK snippets for multiple frameworks (React, Vue, vanilla JS) based on selected config.

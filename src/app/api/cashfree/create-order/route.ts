@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    appId = appId || process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
-    secretKey = secretKey || process.env.CASHFREE_SECRET_KEY;
-    cfEnv = cfEnv || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox";
+    appId = req.headers.get("x-cashfree-app-id") || appId || process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
+    secretKey = req.headers.get("x-cashfree-secret-key") || secretKey || process.env.CASHFREE_SECRET_KEY;
+    cfEnv = req.headers.get("x-cashfree-env") || cfEnv || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox";
 
     // Handle bundler replacement quirks
     if (appId === "undefined" || appId === "null") appId = undefined;

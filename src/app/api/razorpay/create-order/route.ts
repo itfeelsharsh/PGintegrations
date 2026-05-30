@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    keyId = keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    keySecret = keySecret || process.env.RAZORPAY_KEY_SECRET;
+    keyId = req.headers.get("x-razorpay-key-id") || keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    keySecret = req.headers.get("x-razorpay-key-secret") || keySecret || process.env.RAZORPAY_KEY_SECRET;
 
     // Handle bundler replacement quirks
     if (keyId === "undefined" || keyId === "null") keyId = undefined;

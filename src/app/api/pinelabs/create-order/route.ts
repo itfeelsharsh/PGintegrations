@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let mid = process.env.NEXT_PUBLIC_PINELABS_MID;
-    let clientId = process.env.NEXT_PUBLIC_PINELABS_CLIENT_ID;
-    let clientSecret = process.env.PINELABS_CLIENT_SECRET;
-    let env = process.env.NEXT_PUBLIC_PINELABS_ENV || "test";
+    let mid = req.headers.get("x-pinelabs-mid") || process.env.NEXT_PUBLIC_PINELABS_MID;
+    let clientId = req.headers.get("x-pinelabs-client-id") || process.env.NEXT_PUBLIC_PINELABS_CLIENT_ID;
+    let clientSecret = req.headers.get("x-pinelabs-client-secret") || process.env.PINELABS_CLIENT_SECRET;
+    let env = req.headers.get("x-pinelabs-env") || process.env.NEXT_PUBLIC_PINELABS_ENV || "test";
     let baseUrl = process.env.NEXT_PUBLIC_PINELABS_BASE_URL || "https://pluraluat.v2.pinepg.in";
 
     try {

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = getPhonePeConfig();
+    const config = getPhonePeConfig(req.headers);
 
     console.log("PhonePe configuration state - Client ID:", config.clientId ? `${config.clientId.substring(0, 8)}...` : "Missing", "Secret status:", config.clientSecret ? "Configured" : "Missing", "Environment:", config.peEnv);
 

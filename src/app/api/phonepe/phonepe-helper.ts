@@ -1,18 +1,25 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export function getPhonePeConfig() {
+export function getPhonePeConfig(reqHeaders?: Headers | null) {
   let clientId = undefined;
   let clientSecret = undefined;
   let clientVersion = undefined;
   let peEnv = undefined;
 
+  if (reqHeaders) {
+    clientId = reqHeaders.get("x-phonepe-client-id") || undefined;
+    clientSecret = reqHeaders.get("x-phonepe-client-secret") || undefined;
+    clientVersion = reqHeaders.get("x-phonepe-client-version") || undefined;
+    peEnv = reqHeaders.get("x-phonepe-env") || undefined;
+  }
+
   try {
     const ctx = getCloudflareContext();
     if (ctx && ctx.env) {
-      clientId = (ctx.env as any).PHONEPE_CLIENT_ID;
-      clientSecret = (ctx.env as any).PHONEPE_CLIENT_SECRET;
-      clientVersion = (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_VERSION;
-      peEnv = (ctx.env as any).NEXT_PUBLIC_PHONEPE_ENV;
+      clientId = clientId || (ctx.env as any).PHONEPE_CLIENT_ID;
+      clientSecret = clientSecret || (ctx.env as any).PHONEPE_CLIENT_SECRET;
+      clientVersion = clientVersion || (ctx.env as any).NEXT_PUBLIC_PHONEPE_CLIENT_VERSION;
+      peEnv = peEnv || (ctx.env as any).NEXT_PUBLIC_PHONEPE_ENV;
     }
   } catch (e) {
     // Ignore if not running in Cloudflare context

@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    mid = mid || process.env.NEXT_PUBLIC_PAYTM_MID;
-    merchantKey = merchantKey || process.env.PAYTM_MERCHANT_KEY;
-    paytmEnv = paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+    mid = req.headers.get("x-paytm-mid") || mid || process.env.NEXT_PUBLIC_PAYTM_MID;
+    merchantKey = req.headers.get("x-paytm-merchant-key") || merchantKey || process.env.PAYTM_MERCHANT_KEY;
+    paytmEnv = req.headers.get("x-paytm-env") || paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;

@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
       // Ignore if not running in Cloudflare environment
     }
 
-    mid = mid || process.env.NEXT_PUBLIC_PAYTM_MID;
-    merchantKey = merchantKey || process.env.PAYTM_MERCHANT_KEY;
-    website = website || process.env.NEXT_PUBLIC_PAYTM_WEBSITE;
-    channelId = channelId || process.env.NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
-    paytmEnv = paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
+    mid = req.headers.get("x-paytm-mid") || mid || process.env.NEXT_PUBLIC_PAYTM_MID;
+    merchantKey = req.headers.get("x-paytm-merchant-key") || merchantKey || process.env.PAYTM_MERCHANT_KEY;
+    website = req.headers.get("x-paytm-website") || website || process.env.NEXT_PUBLIC_PAYTM_WEBSITE;
+    channelId = req.headers.get("x-paytm-channel-id") || channelId || process.env.NEXT_PUBLIC_PAYTM_CHANNEL_ID || "WEB";
+    paytmEnv = req.headers.get("x-paytm-env") || paytmEnv || process.env.NEXT_PUBLIC_PAYTM_ENV || "staging";
 
     if (mid === "undefined" || mid === "null") mid = undefined;
     if (merchantKey === "undefined" || merchantKey === "null") merchantKey = undefined;

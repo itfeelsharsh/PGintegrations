@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { GATEWAYS_CONFIG } from "@/app/gateways-config";
@@ -27,6 +27,41 @@ const GATEWAY_LABELS: Record<string, string> = {
   pinelabs: "Pine Labs (Plural)",
   cashfree: "Cashfree",
   phonepe: "PhonePe",
+};
+
+const GATEWAY_CREDENTIALS_FIELDS: Record<string, { label: string; key: string; placeholder: string }[]> = {
+  razorpay: [
+    { label: "Razorpay Key ID", key: "keyId", placeholder: "rzp_test_..." },
+    { label: "Razorpay Key Secret", key: "keySecret", placeholder: "..." },
+  ],
+  paytm: [
+    { label: "Paytm Merchant ID (MID)", key: "mid", placeholder: "..." },
+    { label: "Paytm Merchant Key", key: "merchantKey", placeholder: "..." },
+    { label: "Paytm Website", key: "website", placeholder: "WEBSTAGING" },
+    { label: "Paytm Environment", key: "env", placeholder: "staging" },
+  ],
+  payu: [
+    { label: "PayU Key", key: "key", placeholder: "..." },
+    { label: "PayU Merchant Salt", key: "salt", placeholder: "..." },
+    { label: "PayU Environment", key: "env", placeholder: "test" },
+  ],
+  pinelabs: [
+    { label: "PineLabs Merchant ID (MID)", key: "mid", placeholder: "..." },
+    { label: "PineLabs Client ID", key: "clientId", placeholder: "..." },
+    { label: "PineLabs Client Secret", key: "clientSecret", placeholder: "..." },
+    { label: "PineLabs Environment", key: "env", placeholder: "test" },
+  ],
+  cashfree: [
+    { label: "Cashfree App ID", key: "appId", placeholder: "TEST..." },
+    { label: "Cashfree Secret Key", key: "secretKey", placeholder: "..." },
+    { label: "Cashfree Environment", key: "env", placeholder: "sandbox" },
+  ],
+  phonepe: [
+    { label: "PhonePe Merchant ID", key: "clientId", placeholder: "M22BPAMTMAVQU_..." },
+    { label: "PhonePe Client Secret", key: "clientSecret", placeholder: "..." },
+    { label: "PhonePe Client Version", key: "clientVersion", placeholder: "1" },
+    { label: "PhonePe Environment", key: "env", placeholder: "sandbox" },
+  ],
 };
 
 function PgDataTable({ data }: { data: Record<string, any> }) {
@@ -235,9 +270,47 @@ function CheckoutContent() {
     zip: "380015",
   });
 
+  const [customCreds, setCustomCreds] = useState<Record<string, Record<string, string>>>({});
+  const [isCredsOpen, setIsCredsOpen] = useState(false);
+
+  // Load custom credentials from localStorage on mount
+  useEffect(() => {
+    const loaded: Record<string, Record<string, string>> = {};
+    Object.keys(GATEWAY_CREDENTIALS_FIELDS).forEach((gw) => {
+      const stored = localStorage.getItem(`pg_override_${gw}`);
+      if (stored) {
+        try {
+          loaded[gw] = JSON.parse(stored);
+        } catch (_) {}
+      }
+    });
+    setCustomCreds(loaded);
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getHeadersForGateway = (gateway: string) => {
+    const gwCreds = customCreds[gateway];
+    if (!gwCreds) return {};
+    const headers: Record<string, string> = {};
+    Object.entries(gwCreds).forEach(([k, v]) => {
+      if (v) {
+        headers[`x-${gateway}-${k.replace(/([A-Z])/g, "-$1").toLowerCase()}`] = v;
+      }
+    });
+    return headers;
+  };
+
+  const handleCredChange = (gateway: string, key: string, value: string) => {
+    setCustomCreds((prev) => {
+      const updatedGateway = { ...(prev[gateway] || {}), [key]: value };
+      const updated = { ...prev, [gateway]: updatedGateway };
+      localStorage.setItem(`pg_override_${gateway}`, JSON.stringify(updatedGateway));
+      return updated;
+    });
   };
 
   const handlePay = async (e: React.FormEvent) => {
@@ -257,11 +330,16 @@ function CheckoutContent() {
     setIsProcessing(true);
     setErrorMessage("");
 
+    const overrideHeaders = getHeadersForGateway(selectedGateway);
+
     if (selectedGateway === "razorpay") {
       try {
         const orderRes = await fetch("/api/razorpay/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({ amount, currency: "INR" }),
         });
 
@@ -326,7 +404,10 @@ function CheckoutContent() {
             try {
               const verifyRes = await fetch("/api/razorpay/verify-payment", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                  "Content-Type": "application/json",
+                  ...overrideHeaders
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
@@ -371,7 +452,10 @@ function CheckoutContent() {
       try {
         const orderRes = await fetch("/api/paytm/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({ amount }),
         });
 
@@ -419,7 +503,10 @@ function CheckoutContent() {
               try {
                 const verifyRes = await fetch("/api/paytm/verify-payment", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: { 
+                    "Content-Type": "application/json",
+                    ...overrideHeaders
+                  },
                   body: JSON.stringify({
                     orderId: paymentStatus.ORDERID,
                   }),
@@ -479,7 +566,10 @@ function CheckoutContent() {
       try {
         const orderRes = await fetch("/api/payu/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({
             amount,
             productInfo: productName,
@@ -538,7 +628,10 @@ function CheckoutContent() {
                 try {
                   const verifyRes = await fetch("/api/payu/verify-payment", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                      "Content-Type": "application/json",
+                      ...overrideHeaders
+                    },
                     body: JSON.stringify({
                       txnid: BOLT.response.txnid,
                     }),
@@ -582,7 +675,10 @@ function CheckoutContent() {
       try {
         const orderRes = await fetch("/api/pinelabs/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({
             amount,
             productInfo: productName,
@@ -621,7 +717,10 @@ function CheckoutContent() {
       try {
         const orderRes = await fetch("/api/cashfree/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({
             amount,
             name: formData.name,
@@ -669,7 +768,10 @@ function CheckoutContent() {
       try {
         const orderRes = await fetch("/api/phonepe/create-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...overrideHeaders
+          },
           body: JSON.stringify({
             amount,
             phone: formData.phone,
@@ -715,7 +817,10 @@ function CheckoutContent() {
               try {
                 const verifyRes = await fetch("/api/phonepe/verify-payment", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: { 
+                    "Content-Type": "application/json",
+                    ...overrideHeaders
+                  },
                   body: JSON.stringify({
                     orderId: orderData.orderId,
                   }),
@@ -748,7 +853,7 @@ function CheckoutContent() {
       setTimeout(() => {
         setIsProcessing(false);
         alert(
-          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Only Razorpay, Paytm, PayU, PineLabs, Cashfree, and PhonePe are live.`
+          `Demo mode: Payment of ₹${Number(amount).toLocaleString("en-IN")} via ${selectedGateway.toUpperCase()} triggered. Razorpay, Paytm, PayU, PineLabs, Cashfree, and PhonePe are wired for live testing.`
         );
       }, 1000);
     }
@@ -767,17 +872,14 @@ function CheckoutContent() {
     {
       id: "razorpay",
       name: "Razorpay",
-
     },
     {
       id: "paytm",
       name: "PayTM PG",
-
     },
     {
       id: "payu",
       name: "PayU",
-
     },
     {
       id: "pinelabs",
@@ -792,7 +894,6 @@ function CheckoutContent() {
       name: "PhonePe PG",
     },
   ];
-
 
   const resetToIdle = () => {
     setPaymentStatus("idle");
@@ -820,16 +921,16 @@ function CheckoutContent() {
     const isPinelabs = selectedGateway === "pinelabs";
 
     const keysMessage = isCashfree
-      ? "Cashfree API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      ? "Cashfree API credentials are not set in the environment files. Please configure the variables below or enter your test keys below to test the live SDK."
       : isPhonepe
-      ? "PhonePe API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      ? "PhonePe API credentials are not set in the environment files. Please configure the variables below or enter your test keys below to test the live SDK."
       : isPaytm
-      ? "Paytm API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      ? "Paytm API credentials are not set in the environment files. Please configure the variables below or enter your test keys below to test the live SDK."
       : isPayu
-      ? "PayU API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
+      ? "PayU API credentials are not set in the environment files. Please configure the variables below or enter your test keys below to test the live SDK."
       : isPinelabs
-      ? "PineLabs API credentials are not set in the environment files. Please configure the variables below to test the live SDK."
-      : "Razorpay API credentials are not set in the `.env` file. Please configure the variables below to test the live SDK.";
+      ? "PineLabs API credentials are not set in the environment files. Please configure the variables below or enter your test keys below to test the live SDK."
+      : "Razorpay API credentials are not set in the `.env` file. Please configure the variables below or enter your test keys below to test the live SDK.";
 
     const vars = isCashfree
       ? ["NEXT_PUBLIC_CASHFREE_APP_ID=TESTxxxxxx", "CASHFREE_SECRET_KEY=cfsk_ma_xxxxxx", "NEXT_PUBLIC_CASHFREE_ENV=sandbox"]
@@ -845,7 +946,7 @@ function CheckoutContent() {
 
     return (
       <div className="container py-5 text-dark">
-        <div className="mx-auto" style={{ maxWidth: "550px" }}>
+        <div className="mx-auto" style={{ maxWidth: "600px" }}>
           <div className="card border-warning">
             <div className="card-header bg-warning text-dark py-3">
               <h3 className="card-title h5 mb-0 fw-bold">Environment Keys Missing</h3>
@@ -857,14 +958,46 @@ function CheckoutContent() {
                 {vars.map((v) => <div key={v}>{v}</div>)}
               </div>
 
+              {/* Quick Config override inside warning screen */}
+              {selectedGateway && GATEWAY_CREDENTIALS_FIELDS[selectedGateway] && (
+                <div className="card mb-4 border bg-light">
+                  <div className="card-body p-3">
+                    <h6 className="fw-bold mb-3 small text-secondary">Local Overrides for {GATEWAY_LABELS[selectedGateway]}</h6>
+                    <div className="row g-2">
+                      {GATEWAY_CREDENTIALS_FIELDS[selectedGateway].map((field) => (
+                        <div key={field.key} className="col-12">
+                          <label className="form-label small fw-semibold text-secondary mb-1">{field.label}</label>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm font-monospace"
+                            placeholder={field.placeholder}
+                            value={customCreds[selectedGateway]?.[field.key] || ""}
+                            onChange={(e) => handleCredChange(selectedGateway, field.key, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="d-grid gap-2">
+                <button
+                  onClick={() => {
+                    setPaymentStatus("idle");
+                  }}
+                  className="btn btn-primary py-2"
+                  type="button"
+                >
+                  Retry with Local Keys
+                </button>
                 <button
                   onClick={handleSimulateMockSuccess}
                   disabled={isProcessing}
                   className="btn btn-warning text-dark py-2"
                   type="button"
                 >
-                  {isProcessing ? "Processing..." : "Simulate Successful Payment"}
+                  {isProcessing ? "Processing..." : "Simulate Successful Payment (Mock)"}
                 </button>
                 <button
                   onClick={resetToIdle}
@@ -1025,7 +1158,6 @@ function CheckoutContent() {
                                   {isEnabled ? gw.badge : "Under Implementation"}
                                 </span>
                               </div>
-                     
                             </div>
                           </div>
                         </label>
@@ -1034,6 +1166,47 @@ function CheckoutContent() {
                   })}
                 </div>
               </div>
+            </div>
+
+            {/* Collapsible local credential configuration drawer */}
+            <div className="card shadow-sm border bg-white mb-4">
+              <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center cursor-pointer" onClick={() => setIsCredsOpen(!isCredsOpen)} style={{ cursor: "pointer" }}>
+                <h5 className="mb-0 fw-bold text-dark">⚙️ Developer Config: Sandbox Credentials Overrides</h5>
+                <span className="text-secondary small">{isCredsOpen ? "Hide" : "Show"}</span>
+              </div>
+              {isCredsOpen && (
+                <div className="card-body border-top">
+                  <p className="text-secondary small mb-3">
+                    Input keys here to test checkout using your own sandbox keys instead of setting system environment variables. Saved to browser storage.
+                  </p>
+                  <div className="row g-4">
+                    {gateways.map((gw) => {
+                      const fields = GATEWAY_CREDENTIALS_FIELDS[gw.id];
+                      if (!fields) return null;
+
+                      return (
+                        <div key={gw.id} className="col-md-6 border-bottom pb-3">
+                          <h6 className="fw-bold mb-2 text-primary small">{gw.name} Configuration</h6>
+                          <div className="row g-2">
+                            {fields.map((field) => (
+                              <div key={field.key} className="col-12">
+                                <label className="form-label small fw-semibold text-secondary mb-1" style={{ fontSize: "0.75rem" }}>{field.label}</label>
+                                <input
+                                  type="text"
+                                  className="form-control form-control-sm font-monospace"
+                                  placeholder={field.placeholder}
+                                  value={customCreds[gw.id]?.[field.key] || ""}
+                                  onChange={(e) => handleCredChange(gw.id, field.key, e.target.value)}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1078,12 +1251,9 @@ function CheckoutContent() {
                     <>
                       <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                       <span>Processing...</span>
-                      
                     </>
                   ) : (
-                    
                     <>
-                      <i className="bi"></i>
                       <span>
                         {selectedGateway 
                           ? `Test using ${gateways.find(g => g.id === selectedGateway)?.name}` 

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = getPhonePeConfig();
+    const config = getPhonePeConfig(req.headers);
 
     if (!config.isValid) {
       return NextResponse.json(
